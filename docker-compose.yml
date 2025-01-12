@@ -1,0 +1,12 @@
+version: "1"
+services:
+  postgres:
+    image: postgres:14.12
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "oko-freevigilance"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "pass1234"
+    ports:
+      - "5432:5432"
