@@ -9,7 +9,7 @@ import uuid
 @dataclass
 class User:
     id: str
-    name: str
+    username: str
     password: str
     email: str
     deleted_at: Optional[datetime]
@@ -24,18 +24,27 @@ def get_connection(cfg: PostgreConfig):
     )
 
 def get_md5(password: str) -> str:
-    return hashlib.md5(password).hexdigest()
+    return hashlib.md5(password.encode()).hexdigest()
 
 def create_user(cfg: PostgreConfig, name: str, password: str, email: str) -> User:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "INSERT INTO users (id, name, password, email, deleted_at) VALUES (%s, %s, %s, %s, %s)"
-    cur.execute(query, (str(uuid.uuid4()), name, get_md5(password), email, None))
+    query = "INSERT INTO users (id, name, password, email, deleted_at) VALUES (%s, %s, %s, %s, NULL);"
+    new_uid = str(uuid.uuid4())
+    password_hash = get_md5(password)
+    cur.execute(query, (new_uid, name, password_hash, email))
     conn.commit()
     cur.close()
     conn.close()
+    return User(
+        id=new_uid,
+        username=name,
+        password=password_hash,
+        email=email,
+        deleted_at=None,
+    )
 
-def get_user(cfg: PostgreConfig, id: str) -> Optional[User]:
+def get_user_by_id(cfg: PostgreConfig, id: str) -> Optional[User]:
     conn = get_connection(cfg)
     cur = conn.cursor()
     query = "SELECT name, password, email, deleted_at FROM users WHERE id = %s"
@@ -43,4 +52,27 @@ def get_user(cfg: PostgreConfig, id: str) -> Optional[User]:
     row = cur.fetchone()
     if row is None:
         return None
-    return User(*row)
+    return User(
+        id=id,
+        username=row[0],
+        password=row[1],
+        email=row[2],
+        deleted_at=row[3],
+    )
+
+def get_user_by_username(cfg: PostgreConfig, name: str) -> Optional[User]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, password, email, deleted_at FROM users WHERE name = %s"
+    cur.execute(query, (name,))
+    row = cur.fetchone()
+    print(row)
+    if row is None:
+        return None
+    return User(
+        id=row[0],
+        username=name,
+        password=row[1],
+        email=row[2],
+        deleted_at=row[3],
+    )
