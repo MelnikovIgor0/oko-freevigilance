@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS channels (
 
 CREATE TABLE IF NOT EXISTS channel_resource (
   	channel_id VARCHAR(36) NOT NULL REFERENCES channels(id),
-  	resource_id VARCHAR(36) NOT NULL REFERENCES resources(id)
+  	resource_id VARCHAR(36) NOT NULL REFERENCES resources(id),
+	enabled BOOLEAN NOT NULL
 );
 
 CREATE TYPE MONITORING_EVENT_STATUS AS ENUM ('CREATED', 'NOTIFIED', 'WATCHED', 'REACTED');

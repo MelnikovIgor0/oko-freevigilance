@@ -66,7 +66,8 @@ def get_user_by_username(cfg: PostgreConfig, name: str) -> Optional[User]:
     query = "SELECT id, password, email, deleted_at FROM users WHERE name = %s"
     cur.execute(query, (name,))
     row = cur.fetchone()
-    print(row)
+    cur.close()
+    conn.close()
     if row is None:
         return None
     return User(
