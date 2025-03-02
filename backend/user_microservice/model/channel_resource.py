@@ -35,7 +35,7 @@ def get_channel_resource_by_resource_id(cfg: PostgreConfig, resource_id: str) ->
     result = cur.fetchall()
     cur.close()
     conn.close()
-    result = [ChannelResource(channel_id=row[0], resource_id=resource_id, enabled=row[1]) for row in result]
+    return [ChannelResource(channel_id=row[0], resource_id=resource_id, enabled=row[1]) for row in result]
 
 def change_channel_resource_enabled(cfg: PostgreConfig, channel_id: str, resource_id: str, enabled: bool) -> None:
     conn = get_connection(cfg)

@@ -99,7 +99,7 @@ def get_channel(channel_id: str):
         return jsonify({'error': 'channel_id is invalid'}), 400
     channel = get_channel_by_id(cfg.postgres, channel_id)
     if channel is None:
-        return jsonify({'error': 'channel not found'}), 404
+        return jsonify({'error': f'channel {channel_id} not found'}), 404
     return jsonify({'channel': {
         'id': channel.id,
         'params': channel.params,
@@ -113,7 +113,7 @@ def patch_channel(channel_id: str):
         return jsonify({'error': 'channel_id is invalid'}), 400
     channel_old = get_channel_by_id(cfg.postgres, channel_id)
     if channel_old is None:
-        return jsonify({'error': 'channel not found'}), 404
+        return jsonify({'error': f'channel {channel_id} not found'}), 404
     body = request.get_json()
     params = body.get('params')
     enabled = body.get('enabled')
@@ -179,7 +179,7 @@ def new_resource():
     for channel_id in channels:
         channel = get_channel_by_id(cfg.postgres, channel_id)
         if channel is None:
-            return jsonify({'error': 'channel not found'}), 404
+            return jsonify({'error': f'channel {channel_id} not found'}), 404
     
     resource = create_resource(cfg.postgres, url, name, description, keywords, interval, make_screenshot, polygon)
     for channel_id in channels:
@@ -194,7 +194,7 @@ def new_resource():
         'make_screenshot': resource.make_screenshot,
         'enabled': resource.enabled,
         'area': resource.polygon
-    }})
+    }}), 201
 
 @token_required
 @app.route('/resources/<resource_id>', methods=['GET'])
@@ -203,7 +203,7 @@ def get_resource(resource_id: str):
         return jsonify({'error': 'resource_id is invalid'})
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
-        return jsonify({'error': 'resource not found'}), 404
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
     return jsonify({'resource': {
         'id': resource.id,
         'url': resource.url,
@@ -251,6 +251,66 @@ def patch_resorce(resource_id: str):
         'enabled': new_resource.enabled,
         'area': new_resource.polygon
     }}), 200
+
+@token_required
+@app.route('/add_channel_to_resource/', methods=['POST'])
+def add_channel_to_resource():
+    body = request.get_json()
+    resource_id = body.get('resource_id')
+    channel_id = body.get('channel_id')
+    if not resource_id or not channel_id:
+        return jsonify({'error': 'resource_id and channel_id are required'}), 400
+    if not validate_uuid(resource_id) or not validate_uuid(channel_id):
+        return jsonify({'error': 'resource_id and channel_id are invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
+    channel = get_channel_by_id(cfg.postgres, channel_id)
+    if channel is None:
+        return jsonify({'error': f'channel {channel_id} not found'}), 404
+    linked_channels = get_channel_resource_by_resource_id(cfg.postgres, resource_id)
+    print(linked_channels)
+    for item in linked_channels:
+        if item.channel_id == channel_id and item.enabled:
+            return jsonify({'message': 'channel already linked to resource'}), 200
+    create_channel_resource(cfg.postgres, channel_id, resource_id)
+    return jsonify({'message': 'channel linked to resource'}), 201
+
+@token_required
+@app.route('/remove_channel_from_resource/', methods=['DELETE'])
+def remove_channel_from_resource():
+    body = request.get_json()
+    resource_id = body.get('resource_id')
+    channel_id = body.get('channel_id')
+    if not resource_id or not channel_id:
+        return jsonify({'error': 'resource_id and channel_id are required'}), 400
+    if not validate_uuid(resource_id) or not validate_uuid(channel_id):
+        return jsonify({'error': 'resource_id and channel_id are invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
+    channel = get_channel_by_id(cfg.postgres, channel_id)
+    if channel is None:
+        return jsonify({'error': f'channel {channel_id} never was linked to resource {resource_id}'}), 400
+    if not channel.enabled:
+        return jsonify({'message': f'channel {channel_id} is already unlinked from resource {resource_id}'}), 202
+    change_channel_resource_enabled(cfg.postgres, channel_id, resource_id, False)
+    return jsonify({}), 200
+
+@token_required
+@app.route('/channels_by_resource/<resource_id>', methods=['GET'])
+def get_channels_by_resource(resource_id: str):
+    if not validate_uuid(resource_id):
+        return jsonify({'error': 'resource_id is invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
+    channels = get_channel_resource_by_resource_id(cfg.postgres, resource_id)
+    active_channels = []
+    for channel in channels:
+        if channel.enabled:
+            active_channels.append(channel.channel_id)
+    return jsonify({'channels': active_channels}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=cfg.server.port)
