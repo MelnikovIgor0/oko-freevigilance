@@ -60,6 +60,22 @@ def get_user_by_id(cfg: PostgreConfig, id: str) -> Optional[User]:
         deleted_at=row[3],
     )
 
+def get_user_by_email(cfg: PostgreConfig, email: str) -> Optional[User]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, name, password, deleted_at FROM users WHERE email = %s"
+    cur.execute(query, (email,))
+    row = cur.fetchone()
+    if row is None:
+        return None
+    return User(
+        id=row[0],
+        username=row[1],
+        password=row[2],
+        email=email,
+        deleted_at=row[3],
+    )
+
 def get_user_by_username(cfg: PostgreConfig, name: str) -> Optional[User]:
     conn = get_connection(cfg)
     cur = conn.cursor()
