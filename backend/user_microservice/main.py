@@ -1,19 +1,22 @@
 from flask import Flask, request, make_response
 from flask import jsonify
+from flask_cors import CORS
+
 import migrator
 from config.config import parse_config
-from model.user import User, create_user, get_user_by_id, get_user_by_username, get_md5
+from model.user import User, create_user, get_user_by_email, get_user_by_username, get_md5
 from model.channel import Channel, create_channel, get_channel_by_id, update_channel
 from validators import validate_username, validate_email, validate_password, validate_uuid
 import jwt
 import datetime
 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173"], supports_credentials=True)  
 
 cfg = parse_config()
 print(cfg)
 
-migrator.migrate(cfg.postgres)
+# migrator.migrate(cfg.postgres)
 
 def token_required(f):
     def decorated(*args, **kwargs):
@@ -29,21 +32,28 @@ def token_required(f):
 
 @app.route('/users/login', methods=['POST'])
 def login():
-    auth = request.authorization
-    if not auth or not auth.username or not auth.password:
-        return jsonify({'error': 'Invalid credentials'})
-    user = get_user_by_username(cfg.postgres, auth.username)
-    password_hash = get_md5(auth.password)
+    body = request.get_json()
+    email = body.get('email')
+    password = body.get('password')
+    if not email or not password:
+        return jsonify({'error': 'Invalid credentials 1'}), 400
+    user = get_user_by_email(cfg.postgres, email)
+    password_hash = get_md5(password)
     if user is None or user.password != password_hash:
-        return jsonify({'error': 'Invalid credentials'})
+        return jsonify({'error': 'Invalid credentials 2'}), 400
     token = jwt.encode(
         {
-            'user': auth.username,
+            'user': email,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1440)
         },
         cfg.server.secret_key,
     )
-    return token
+    return jsonify({'accessToken': token, 'user': {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'deleted_at': user.deleted_at,
+    }})
 
 @app.route('/access', methods=['GET'])
 @token_required
@@ -77,6 +87,31 @@ def register():
         'email': user.email,
         'deleted_at': user.deleted_at,
     }}), 201
+
+@app.route('/users/info', methods=['POST'])
+def info():
+    bearer = request.headers.get('Authorization')
+
+    if not bearer:
+        return jsonify({'error': 'token is missing'}), 403
+    
+    token = bearer.split()[1]
+    if not token:
+        return jsonify({'error': 'token is missing'}), 403
+    try:
+        email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")['user']
+    except Exception as error:
+        return jsonify({'error': 'token is invalid/expired'})
+    
+    user = get_user_by_email(cfg.postgres, email)
+    if user is None:
+        return jsonify({'error': 'user not found'}), 404
+    
+    return jsonify({'user': user})
+
+@app.route('/users/logout', methods=['POST'])
+def logout():
+    return jsonify({})
 
 @token_required
 @app.route('/channels/create', methods=['POST'])
@@ -128,4 +163,4 @@ def patch_channel(channel_id: str):
     }}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=cfg.server.port)
+    app.run(host="0.0.0.0", debug=True, port=cfg.server.port)
