@@ -2,7 +2,7 @@ postgres:
   database: oko-freevigilance
   user: postgres
   password: pass1234
-  host: postgres
+  host: 127.0.0.1
   port: 5432
 server:
   port: 8083
