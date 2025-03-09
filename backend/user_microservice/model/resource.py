@@ -80,29 +80,21 @@ def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resourc
     )
 
 def update_resource(cfg: PostgreConfig, resource_id: str, description: str, keywords: str, interval: str, enabled: bool, polygon: Dict[str, Any]) -> None:
-    print('here', resource_id, description, keywords, interval, enabled, polygon)
     conn = get_connection(cfg)
     cur = conn.cursor()
     resources_table = Table('resources')
     query = Query.update(resources_table)
-    print(type(query))
     if description is not None:
         query = query.set(resources_table.description, description)
-    print(type(query))
     if keywords is not None:
         query = query.set(resources_table.key_words, keywords)
-    print(type(query))
     if interval is not None:
         query = query.set(resources_table.interval, interval)
-    print(type(query))
     if enabled is not None:
         query = query.set(resources_table.enabled, enabled)
-    print(type(query))
     if polygon is not None:
         query = query.set(resources_table.monitoring_polygon, json.dumps(polygon))
-    print(type(query))
     query = query.where(resources_table.id == resource_id)
-    print(type(query))
     cur.execute(query.get_sql())
     conn.commit()
     cur.close()

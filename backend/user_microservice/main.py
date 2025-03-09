@@ -1,6 +1,8 @@
 from flask import Flask, request, make_response
 from flask import jsonify
 from config.config import parse_config
+from minio import Minio
+from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
 from model.channel import Channel, create_channel, get_channel_by_id, update_channel
 from model.resource import Resource, create_resource, get_resource_by_id, update_resource
@@ -9,6 +11,7 @@ from validators import validate_username, validate_email, validate_password, val
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon
 import jwt
 import datetime
+import base64
 
 app = Flask(__name__)
 
@@ -171,7 +174,6 @@ def new_resource():
             if polygon:
                 polygon['sensitivity'] = sensitivity
                 if not validate_polygon(polygon):
-                    print("polygon", polygon)
                     return jsonify({'error': 'polygon is invalid'}), 400
     channels = body.get('channels')
     if channels is None:
@@ -184,6 +186,9 @@ def new_resource():
     resource = create_resource(cfg.postgres, url, name, description, keywords, interval, make_screenshot, polygon)
     for channel_id in channels:
         create_channel_resource(cfg.postgres, channel_id, resource.id)
+
+    # TODO: тут еще надо завести крон джобу
+
     return jsonify({'resource': {
         'id': resource.id,
         'url': resource.url,
@@ -269,7 +274,6 @@ def add_channel_to_resource():
     if channel is None:
         return jsonify({'error': f'channel {channel_id} not found'}), 404
     linked_channels = get_channel_resource_by_resource_id(cfg.postgres, resource_id)
-    print(linked_channels)
     for item in linked_channels:
         if item.channel_id == channel_id and item.enabled:
             return jsonify({'message': 'channel already linked to resource'}), 200
@@ -311,6 +315,19 @@ def get_channels_by_resource(resource_id: str):
         if channel.enabled:
             active_channels.append(channel.channel_id)
     return jsonify({'channels': active_channels}), 200
+
+@token_required
+@app.route('/events/create', methods=['POST'])
+def create_event():
+    print(request.files)
+    if 'example_screenshot_5.png' not in request.files:
+        return jsonify({'error': 'screenshot is required'}), 400
+    image = request.files['example_screenshot_5.png']
+    if image is None:
+        return jsonify({'error': 'screenshot is required'}), 400
+    image_string = base64.b64encode(image.read())
+    print(type(image_string), image_string, type(image_string))
+    return jsonify({}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=cfg.server.port)

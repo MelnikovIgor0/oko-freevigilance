@@ -10,6 +10,12 @@ class PostgreConfig:
     port: str
 
 @dataclass
+class S3Config:
+    connection_string: str
+    aws_access_key_id: str
+    aws_secret_access_key: str
+
+@dataclass
 class ServerConfig:
     port: str
     secret_key: str
@@ -17,6 +23,7 @@ class ServerConfig:
 @dataclass
 class Config:
     postgres: PostgreConfig
+    s3: S3Config
     server: ServerConfig
 
 def parse_config() -> Config:
@@ -24,5 +31,6 @@ def parse_config() -> Config:
         data = yaml.safe_load(file)
     return Config(
         postgres=PostgreConfig(**data['postgres']),
+        s3=S3Config(**data['s3']),
         server=ServerConfig(**data['server']),
     )
