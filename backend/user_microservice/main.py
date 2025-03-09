@@ -29,9 +29,12 @@ def token_required(f):
         if not token:
             return jsonify({'error': 'token is missing'}), 403
         try:
-            jwt.decode(token, cfg.server.secret_key, algorithms="HS256")
+            email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")['user']
         except Exception as error:
             return jsonify({'error': 'token is invalid/expired'}), 401
+        user = get_user_by_email(cfg.postgres, email)
+        if user is None:
+            return jsonify({'error': 'user not found'}), 404
         return f(*args, **kwargs)
     return decorated
 
