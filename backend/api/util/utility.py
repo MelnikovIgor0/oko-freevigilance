@@ -1,6 +1,6 @@
 from model.resource import Resource
 from config.config import ServerConfig
-from util.cron import create_cron_job, update_cron_job
+from util.cron import create_cron_job, update_cron_job, kill_cron_job
 
 
 def build_query(resource: Resource, server_config: ServerConfig) -> str:
@@ -21,5 +21,7 @@ def create_daemon_cron_job_for_resource(resource: Resource, server_config: Serve
 
 
 def update_daemon_cron_job_for_resource(resource: Resource, server_config: ServerConfig) -> bool:
+    if not resource.enabled:
+        kill_cron_job(resource.id)
     query = build_query(resource, server_config)
     return update_cron_job(query, resource.interval, resource.id)
