@@ -9,5 +9,6 @@ s3:
   aws_access_key_id: s3
   aws_secret_access_key: pass1234
 server:
+  host: 127.0.0.1
   port: 8083
   secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3

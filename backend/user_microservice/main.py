@@ -1,12 +1,13 @@
 from flask import Flask, request, make_response
 from flask import jsonify
+from flask_cors import CORS
 from config.config import parse_config
 from minio import Minio
 from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
 from model.channel import Channel, create_channel, get_channel_by_id, update_channel
 from model.resource import Resource, create_resource, get_resource_by_id, update_resource
-from model.user import User, create_user, get_user_by_id, get_user_by_username, get_md5
+from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon
 import jwt
@@ -14,39 +15,71 @@ import datetime
 import base64
 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
 
 cfg = parse_config()
 print(cfg)
 
 def token_required(f):
     def decorated(*args, **kwargs):
-        token = request.args.get('token')
+        bearer = request.headers.get('Authorization')
+        if not bearer:
+            return jsonify({'error': 'token is missing'}), 403
+        token = bearer.split()[1]
         if not token:
             return jsonify({'error': 'token is missing'}), 403
         try:
             jwt.decode(token, cfg.server.secret_key, algorithms="HS256")
         except Exception as error:
-            return jsonify({'error': 'token is invalid/expired'})
+            return jsonify({'error': 'token is invalid/expired'}), 401
         return f(*args, **kwargs)
     return decorated
 
 @app.route('/users/login', methods=['POST'])
 def login():
-    auth = request.authorization
-    if not auth or not auth.username or not auth.password:
-        return jsonify({'error': 'Invalid credentials'})
-    user = get_user_by_username(cfg.postgres, auth.username)
-    password_hash = get_md5(auth.password)
+    body = request.get_json()
+    email = body.get('email')
+    password = body.get('password')
+    if not email or not password:
+        return jsonify({'error': 'Invalid credentials 1'}), 400
+    user = get_user_by_email(cfg.postgres, email)
+    password_hash = get_md5(password)
     if user is None or user.password != password_hash:
-        return jsonify({'error': 'Invalid credentials'})
+        return jsonify({'error': 'Invalid credentials 2'}), 400
     token = jwt.encode(
         {
-            'user': auth.username,
+            'user': email,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1440)
         },
         cfg.server.secret_key,
     )
-    return token
+    return jsonify({'accessToken': token, 'user': {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'deleted_at': user.deleted_at,
+    }}), 200
+
+@app.route('/users/info', methods=['GET'])
+def info():
+    bearer = request.headers.get('Authorization')
+    if not bearer:
+        return jsonify({'error': 'token is missing'}), 403
+    token = bearer.split()[1]
+    if not token:
+        return jsonify({'error': 'token is missing'}), 403
+    try:
+        email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")['user']
+    except Exception as error:
+        return jsonify({'error': 'token is invalid/expired'}), 401
+    user = get_user_by_email(cfg.postgres, email)
+    if user is None:
+        return jsonify({'error': 'user not found'}), 404
+    return jsonify({'user': user})
+
+@app.route('/users/logout', methods=['POST'])
+def logout():
+    return jsonify({}), 200
 
 @app.route('/access', methods=['GET'])
 @token_required
@@ -205,7 +238,7 @@ def new_resource():
 @app.route('/resources/<resource_id>', methods=['GET'])
 def get_resource(resource_id: str):
     if not validate_uuid(resource_id):
-        return jsonify({'error': 'resource_id is invalid'})
+        return jsonify({'error': 'resource_id is invalid'}), 400
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
         return jsonify({'error': f'resource {resource_id} not found'}), 404
@@ -330,4 +363,4 @@ def create_event():
     return jsonify({}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=cfg.server.port)
+    app.run(host=cfg.server.host, port=cfg.server.port, debug=True)

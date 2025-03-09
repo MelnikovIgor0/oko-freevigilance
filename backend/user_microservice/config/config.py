@@ -17,6 +17,7 @@ class S3Config:
 
 @dataclass
 class ServerConfig:
+    host: str
     port: str
     secret_key: str
 
