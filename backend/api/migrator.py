@@ -21,6 +21,7 @@ def migrate(cfg: PostgreConfig) -> None:
     cur.close()
     conn.close()
 
+
 def init_s3_buckets(cfg: S3Config) -> None:
     s3 = boto3.client(
         's3',
@@ -30,6 +31,7 @@ def init_s3_buckets(cfg: S3Config) -> None:
     )
     s3.create_bucket(Bucket='images')
     s3.create_bucket(Bucket='htmls')
+
 
 def main():
     cfg = parse_config()

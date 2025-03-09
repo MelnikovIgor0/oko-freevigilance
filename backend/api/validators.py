@@ -43,19 +43,15 @@ def validate_keywords(keywords: List[str]) -> bool:
 
 def validate_interval(interval: Dict[str, str]) -> bool:
     if type(interval) != dict:
-        print('here1')
         return False
     for data_type in ['minutes', 'hours', 'days', 'months', 'day_of_week']:
         if data_type not in interval:
-            print('here2')
             return False
         if type(interval[data_type]) != str:
-            print('here3')
             return False
         try:
             value = int(interval[data_type])
             if value < 0:
-                print('here4')
                 return False
             continue
         except:
@@ -64,18 +60,14 @@ def validate_interval(interval: Dict[str, str]) -> bool:
             continue
         parts = interval[data_type].split(' ')
         if len(parts) != 3:
-            print('here5', len(parts))
             return False
         if parts[0] != '*':
-            print('here7')
             return False
         if parts[1] != '/':
-            print('here8')
             return False
         try:
             value = int(parts[2])
             if value < 0:
-                print('here9')
                 return False
             continue
         except:
