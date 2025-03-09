@@ -1,12 +1,10 @@
 import argparse
-from dataclasses import dataclass
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 from typing import Dict, List, Optional, Tuple
 import urllib.request
 from bs4 import BeautifulSoup
-import requests
 from config.config import parse_config, PostgreConfig, S3Config
 from html.parser import HTMLParser
 import re

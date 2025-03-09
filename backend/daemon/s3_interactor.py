@@ -17,7 +17,7 @@ def create_bucket(cfg: S3Config, bucket_name: str) -> bool:
         s3.create_bucket(Bucket=bucket_name)
         return True
     except Exception as e:
-        print(f"Ошибка при создании бакета: {e}")
+        print(f"error while bucket creation: {e}")
         return False
 
 
@@ -32,7 +32,7 @@ def add_object(cfg: S3Config, bucket_name: str, file_name: str, object_name: str
         s3.upload_file(file_name, bucket_name, object_name)
         return True
     except NoCredentialsError:
-        print("Ошибка: отсутствуют учетные данные")
+        print("invalid credentials")
         return False
     except Exception:
         return False
@@ -49,7 +49,7 @@ def get_object(cfg: S3Config, bucket_name: str, object_name: str) -> Any:
         response = s3.get_object(Bucket=bucket_name, Key=object_name)
         return response['Body'].read()
     except NoCredentialsError:
-        print("Ошибка: отсутствуют учетные данные")
+        print("invalid credentials")
         return False
     except Exception:
         return False
@@ -80,4 +80,7 @@ def get_all_files(cfg: S3Config, bucket_name: str) -> Any:
             return []
         return response['Contents']
     except NoCredentialsError:
-        print("Ошибка: отсутствуют учетные")
+        print("invalid credentials")
+        return None
+    except Exception:
+        return None
