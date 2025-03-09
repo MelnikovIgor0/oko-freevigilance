@@ -9,7 +9,8 @@ from model.channel import Channel, create_channel, get_channel_by_id, update_cha
 from model.resource import Resource, create_resource, get_resource_by_id, update_resource
 from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
-    validate_name, validate_description, validate_keywords, validate_interval, validate_polygon
+    validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
+    get_interval
 import jwt
 import datetime
 import base64
@@ -192,6 +193,7 @@ def new_resource():
         return jsonify({'error': 'interval is missing'}), 400
     if not validate_interval(interval):
         return jsonify({'error': 'interval is invalid'}), 400
+    interval = get_interval(interval)
     make_screenshot = False
     sensitivity = body.get('sensitivity')
     if sensitivity:
