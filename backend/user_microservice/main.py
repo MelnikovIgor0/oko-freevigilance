@@ -206,11 +206,12 @@ def new_resource():
             return jsonify({'error': 'zone_type is invalid'}), 400
         polygon = None
         if zone_type == 'zone':
-            polygon = body.get('area')
+            polygon = body.get('areas')
             if polygon:
-                polygon['sensitivity'] = sensitivity
-                if not validate_polygon(polygon):
-                    return jsonify({'error': 'polygon is invalid'}), 400
+                for area in polygon:
+                    area['sensitivity'] = sensitivity
+                    if not validate_polygon(area):
+                        return jsonify({'error': 'polygon is invalid'}), 400
     channels = body.get('channels')
     if channels is None:
         return jsonify({'error': 'at least one channel should be specified'}), 400
@@ -234,7 +235,7 @@ def new_resource():
         'interval': resource.interval,
         'make_screenshot': resource.make_screenshot,
         'enabled': resource.enabled,
-        'area': resource.polygon
+        'areas': resource.polygon
     }}), 201
 
 @token_required
@@ -254,7 +255,7 @@ def get_resource(resource_id: str):
         'interval': resource.interval,
         'make_screenshot': resource.make_screenshot,
         'enabled': resource.enabled,
-        'area': resource.polygon
+        'areas': resource.polygon
     }}), 200
 
 @token_required
@@ -276,7 +277,7 @@ def patch_resorce(resource_id: str):
     if interval is not None and not validate_interval(interval):
         return jsonify({'error': 'interval is invalid'}), 400
     enabled = body.get('enabled')
-    polygon = body.get('area')
+    polygon = body.get('areas')
     if polygon is not None and not validate_polygon(polygon):
         return jsonify({'error': 'polygon is invalid'}), 400
     update_resource(cfg.postgres, resource_id, description, keywords, interval, enabled, polygon)
@@ -290,7 +291,7 @@ def patch_resorce(resource_id: str):
         'interval': new_resource.interval,
         'make_screenshot': new_resource.make_screenshot,
         'enabled': new_resource.enabled,
-        'area': new_resource.polygon
+        'areas': new_resource.polygon
     }}), 200
 
 @token_required
