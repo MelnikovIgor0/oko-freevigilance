@@ -6,11 +6,12 @@ from minio import Minio
 from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
 from model.channel import Channel, create_channel, get_channel_by_id, update_channel
+from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id, update_monitoring_event_status
 from model.resource import Resource, create_resource, get_resource_by_id, update_resource
 from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
-    get_interval
+    get_interval, validate_monitoring_event_status
 import jwt
 import datetime
 import base64
@@ -372,16 +373,29 @@ def get_channels_by_resource(resource_id: str):
 
 
 @token_required
-@app.route('/events/create', methods=['POST'])
-def create_event():
-    print(request.files)
-    if 'example_screenshot_5.png' not in request.files:
-        return jsonify({'error': 'screenshot is required'}), 400
-    image = request.files['example_screenshot_5.png']
-    if image is None:
-        return jsonify({'error': 'screenshot is required'}), 400
-    image_string = base64.b64encode(image.read())
-    print(type(image_string), image_string, type(image_string))
+@app.route('/events/<event_id>', methods=['GET'])
+def get_event(event_id: str):
+    if not validate_uuid(event_id):
+        return jsonify({'error': 'event_id is invalid'}), 400
+    event = get_monitoring_event_by_id(cfg.postgres, event_id)
+    if event is None:
+        return jsonify({'error': f'event {event_id} not found'}), 404
+    return jsonify({'event': event}), 200
+
+
+@token_required
+@app.route('/events/<event_id>', methods=['PATCH'])
+def update_event(event_id: str):
+    if not validate_uuid(event_id):
+        return jsonify({'error': 'event_id is invalid'}), 400
+    event = get_monitoring_event_by_id(cfg.postgres, event_id)
+    if event is None:
+        return jsonify({'error': f'event {event_id} not found'}), 404
+    body = request.get_json()
+    status = body.get('status')
+    if status is not None and not validate_monitoring_event_status(status):
+        return jsonify({'error': 'status is invalid'}), 400
+    update_monitoring_event_status(cfg.postgres, event_id, status)
     return jsonify({}), 200
 
 

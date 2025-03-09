@@ -1,11 +1,13 @@
 import re
 from typing import Any, Dict, List
 
+
 def validate_username(username: str) -> bool:
     if len(username) < 6 or len(username) > 80:
         return False
     pattern = re.compile("^[a-zA-Z0-9-_]*")
     return pattern.match(username)
+
 
 def validate_email(email: str) -> bool:
     if len(email) < 5 or len(email) > 255:
@@ -13,25 +15,31 @@ def validate_email(email: str) -> bool:
     pattern = re.compile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
     return pattern.match(email)
 
+
 def validate_password(password: str) -> bool:
     if len(password) < 8 or len(password) > 50:
         return False
     pattern = re.compile("^[a-zA-Z0-9-,.;:?]*")
     return pattern.match(password)
 
+
 def validate_uuid(uuid: str) -> bool:
     pattern = re.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
     return pattern.match(uuid)
+
 
 def validate_url(url: str) -> bool:
     # TODO: найти нормальную регулярку на url
     return True
 
+
 def validate_name(name: str) -> bool:
     return 0 <= len(name) <= 255
 
+
 def validate_description(descripiton: str) -> bool:
     return 0 <= len(descripiton) <= 1024
+
 
 def validate_keywords(keywords: List[str]) -> bool:
     if len(keywords) > 100:
@@ -40,6 +48,7 @@ def validate_keywords(keywords: List[str]) -> bool:
         if len(keyword) > 255:
             return False
     return True
+
 
 def validate_interval(interval: Dict[str, str]) -> bool:
     if type(interval) != dict:
@@ -75,12 +84,14 @@ def validate_interval(interval: Dict[str, str]) -> bool:
         return False
     return True
 
+
 def get_interval(interval: Dict[str, str]) -> str:
     return interval['minutes'].replace(' ', '') +\
         ' ' + interval['hours'].replace(' ', '') +\
         ' ' + interval['days'].replace(' ', '') +\
         ' ' + interval['months'].replace(' ', '') +\
         ' ' + interval['day_of_week'].replace(' ', '')
+
 
 def validate_polygon(polygon: Dict[str, Any]) -> bool:
     if 'sensitivity' not in polygon:
@@ -104,3 +115,6 @@ def validate_polygon(polygon: Dict[str, Any]) -> bool:
         except:
             return False
     return True
+
+def validate_monitoring_event_status(status: str) -> bool:
+    return status in ['CREATED', 'NOTIFIED', 'WATCHED', 'REACTED']
