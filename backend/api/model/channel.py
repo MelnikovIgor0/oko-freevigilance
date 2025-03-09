@@ -52,7 +52,10 @@ def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
         enabled=result[1],
     )
 
-def update_channel(cfg: PostgreConfig, channel_id: str, data: Optional[dict[str, Any]], enabled: Optional[bool]):
+def update_channel(cfg: PostgreConfig,
+                   channel_id: str,
+                   data: Optional[dict[str, Any]],
+                   enabled: Optional[bool]):
     conn = get_connection(cfg)
     cur = conn.cursor()
     channels_table = Table('channels')
@@ -62,6 +65,8 @@ def update_channel(cfg: PostgreConfig, channel_id: str, data: Optional[dict[str,
     if enabled is not None:
         query = query.set(channels_table.enabled, enabled)
     query = query.where(channels_table.id == channel_id)
+    if query.get_sql() is None or len(query.get_sql()) == 0:
+        return
     cur.execute(query.get_sql())
     conn.commit()
     cur.close()

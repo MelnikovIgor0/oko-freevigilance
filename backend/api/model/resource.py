@@ -79,7 +79,13 @@ def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resourc
         polygon=result[7]
     )
 
-def update_resource(cfg: PostgreConfig, resource_id: str, description: str, keywords: str, interval: str, enabled: bool, polygon: List[Dict[str, Any]]) -> None:
+def update_resource(cfg: PostgreConfig,
+                    resource_id: Optional[str],
+                    description: Optional[str],
+                    keywords: Optional[str],
+                    interval: Optional[str],
+                    enabled: Optional[bool],
+                    polygon: Optional[List[Dict[str, Any]]]) -> None:
     conn = get_connection(cfg)
     cur = conn.cursor()
     resources_table = Table('resources')
@@ -95,6 +101,8 @@ def update_resource(cfg: PostgreConfig, resource_id: str, description: str, keyw
     if polygon is not None:
         query = query.set(resources_table.monitoring_polygon, json.dumps(polygon))
     query = query.where(resources_table.id == resource_id)
+    if query.get_sql() is None or len(query.get_sql()) == 0:
+        return
     cur.execute(query.get_sql())
     conn.commit()
     cur.close()
