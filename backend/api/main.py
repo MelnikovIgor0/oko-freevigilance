@@ -15,6 +15,8 @@ from validators import validate_username, validate_email, validate_password, val
 import jwt
 import datetime
 import base64
+from model.s3_interactor import create_bucket, add_object, get_object, get_image
+from util.html_parser import extract_text_from_html
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -398,6 +400,33 @@ def update_event(event_id: str):
     update_monitoring_event_status(cfg.postgres, event_id, status)
     return jsonify({}), 200
 
+
+@token_required
+@app.route('/events/<event_id>/snapshot', methods=['GET'])
+def get_event_snapshot(event_id: str):
+    if not validate_uuid(event_id):
+        return jsonify({'error': 'event_id is invalid'}), 400
+    image = get_object(cfg.s3, 'images', event_id + '.png')
+    if image is None:
+        return jsonify({'error': f'event {event_id} has no snapshot'}), 404
+    image_base64 = base64.b64encode(image).decode('utf-8')
+    return jsonify({
+        'image': image_base64
+    })
+
+
+@token_required
+@app.route('/events/<event_id>/text', methods=['GET'])
+def get_event_text(event_id: str):
+    if not validate_uuid(event_id):
+        return jsonify({'error': 'event_id is invalid'}), 400
+    html = get_object(cfg.s3, 'htmls', event_id + '.html')
+    if html is None:
+        return jsonify({'error': f'event {event_id} has no html'}), 404
+    text = extract_text_from_html(html)
+    return jsonify({
+        'text': text
+    }), 200
 
 if __name__ == '__main__':
     app.run(host=cfg.server.host, port=cfg.server.port, debug=True)

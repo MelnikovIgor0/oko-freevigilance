@@ -2,6 +2,8 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 from config.config import S3Config
 from typing import Any
+from io import BytesIO
+from PIL import Image
 
 
 def create_bucket(cfg: S3Config, bucket_name: str) -> bool:
@@ -48,9 +50,9 @@ def get_object(cfg: S3Config, bucket_name: str, object_name: str) -> Any:
         return response['Body'].read()
     except NoCredentialsError:
         print("invalid credentials")
-        return False
+        return None
     except Exception:
-        return False
+        return None
 
 
 def get_image(cfg: S3Config, bucket_name: str, image_name: str) -> Image.Image:
