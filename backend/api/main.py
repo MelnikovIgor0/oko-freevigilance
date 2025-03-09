@@ -17,6 +17,8 @@ import datetime
 import base64
 from model.s3_interactor import create_bucket, add_object, get_object, get_image
 from util.html_parser import extract_text_from_html
+from util.cron import create_cron_job, kill_cron_job, update_cron_job
+from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -239,7 +241,7 @@ def new_resource():
     for channel_id in channels:
         create_channel_resource(cfg.postgres, channel_id, resource.id)
 
-    # TODO: тут еще надо завести крон джобу
+    create_daemon_cron_job_for_resource(resource, cfg.server)
 
     return jsonify({'resource': {
         'id': resource.id,
@@ -299,6 +301,9 @@ def patch_resorce(resource_id: str):
         return jsonify({'error': 'polygon is invalid'}), 400
     update_resource(cfg.postgres, resource_id, description, keywords, interval, enabled, polygon)
     new_resource = get_resource_by_id(cfg.postgres, resource_id)
+
+    update_daemon_cron_job_for_resource(new_resource, cfg.server)
+
     return jsonify({'resource': {
         'id': new_resource.id,
         'url': new_resource.url,
@@ -412,7 +417,7 @@ def get_event_snapshot(event_id: str):
     image_base64 = base64.b64encode(image).decode('utf-8')
     return jsonify({
         'image': image_base64
-    })
+    }), 200
 
 
 @token_required
@@ -427,6 +432,7 @@ def get_event_text(event_id: str):
     return jsonify({
         'text': text
     }), 200
+
 
 if __name__ == '__main__':
     app.run(host=cfg.server.host, port=cfg.server.port, debug=True)

@@ -20,6 +20,7 @@ class ServerConfig:
     host: str
     port: str
     secret_key: str
+    daemon_path: str
 
 @dataclass
 class Config:

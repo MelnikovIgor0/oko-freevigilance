@@ -25,7 +25,7 @@ class Resource:
     interval: str
     make_screenshot: bool
     enabled: bool
-    polygon: Dict[str, Any]
+    polygon: List[Dict[str, Any]]
 
 def create_resource(
         cfg: PostgreConfig,
@@ -35,7 +35,7 @@ def create_resource(
         keywords: List[str],
         interval: str,
         make_screenshot: bool,
-        polygon: Dict[str, Any]
+        polygon: List[Dict[str, Any]]
 ):
     conn = get_connection(cfg)
     cur = conn.cursor()
@@ -79,7 +79,7 @@ def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resourc
         polygon=result[7]
     )
 
-def update_resource(cfg: PostgreConfig, resource_id: str, description: str, keywords: str, interval: str, enabled: bool, polygon: Dict[str, Any]) -> None:
+def update_resource(cfg: PostgreConfig, resource_id: str, description: str, keywords: str, interval: str, enabled: bool, polygon: List[Dict[str, Any]]) -> None:
     conn = get_connection(cfg)
     cur = conn.cursor()
     resources_table = Table('resources')

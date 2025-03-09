@@ -21,11 +21,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--url', type=str, required=True)
     parser.add_argument('-r', '--resource_id', type=str, required=True)
-    parser.add_argument('-s', '--snapshot_id', type=str, required=True)
-    parser.add_argument('--screenshot_path', type=str)
-    parser.add_argument('--html_path', type=str)
-    parser.add_argument('--screenshot_prev_path', type=str)
-    parser.add_argument('--html_prev_path', type=str)
     parser.add_argument('--keywords', type=str)
     parser.add_argument('--area', type=str)
     return parser.parse_args()
@@ -57,11 +52,11 @@ def save_html(cfg: S3Config, url: str, file_name: str) -> None:
     add_object(cfg, 'htmls', '/tmp/' + file_name, file_name)
 
 
-def monitor_url(cfg: S3Config, args: argparse.Namespace) -> None:
-    if args.screenshot_path:
-        save_screenshot(cfg, args.url, args.screenshot_path)
-    if args.html_path:
-        save_html(cfg, args.url, args.html_path)
+def monitor_url(cfg: S3Config, url: str, screenshot_path: str, html_path: str) -> None:
+    if screenshot_path:
+        save_screenshot(cfg, url, screenshot_path)
+    if html_path:
+        save_html(cfg, url, html_path)
 
 
 def extract_text_from_html(cfg: S3Config, html_path: str):
@@ -144,7 +139,6 @@ def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_pa
         for j in range(y, y + height):
             if pixels_are_different(pixels1[i, j], pixels2[i, j]):
                 changed_count += 1
-    print(changed_count, total_size)
     return changed_count * sensitivity / 100 >= total_size
 
 
@@ -190,21 +184,49 @@ def save_keywords_events(cfg: PostgreConfig, events: List[str]) -> None:
         pass
 
 
+def get_last_snapshot_id(cfg: S3Config, resource_id: str) -> int:
+    images = get_all_files(cfg, 'images')
+    htmls = get_all_files(cfg, 'htmls')
+    max_id = 0
+    for image in images:
+        if image['Key'].startswith(resource_id):
+            max_id = max(max_id, int(image['Key'].replace('.', '_').split('_')[1]))
+    for html in htmls:
+        if html['Key'].startswith(resource_id):
+            max_id = max(max_id, int(html['Key'].replace('.', '_').split('_')[1]))
+    return max_id
+
+
 def main():
     cfg = parse_config()
     print(cfg)
     args = parse_args()
     print(args)
-    monitor_url(cfg.s3, args)
+
+    snapshot_id = get_last_snapshot_id(cfg.s3, args.resource_id)
+    screenshot_path = None
+    screenshot_prev_path = None
+    html_path = None
+    html_prev_path = None
+    if args.keywords is not None and len(args.keywords) > 0:
+        html_path = args.resource_id + '_' + str(snapshot_id + 1) + '.html'
+        if snapshot_id > 0:
+            html_prev_path = args.resource_id + '_' + str(snapshot_id) + '.html'
+    if args.area is not None and len(args.area) > 0:
+        screenshot_path = args.resource_id + '_' + str(snapshot_id + 1) + '.png'
+        if snapshot_id > 0:
+            screenshot_prev_path = args.resource_id + '_' + str(snapshot_id) + '.png'
+
+    monitor_url(cfg.s3, args.url, screenshot_path, html_path)
     keyword_events = []
     if args.keywords:
-        keyword_events = get_keywords_events(cfg.s3, args.html_path, args.html_prev_path, args.keywords.split(','))
+        keyword_events = get_keywords_events(cfg.s3, html_path, html_prev_path, args.keywords.split(','))
     screenshot_changed = False
-    if args.screenshot_path:
-        screenshot_changed = get_screenshot_events(cfg.s3, args.screenshot_path, args.screenshot_prev_path, args.area)
+    if args.area:
+        screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, args.area)
     print(keyword_events)
     print(screenshot_changed)
-    save_monitoring_events(cfg.postgres, args.resource_id, args.snapshot_id, keyword_events, screenshot_changed)
+    save_monitoring_events(cfg.postgres, args.resource_id, snapshot_id, keyword_events, screenshot_changed)
 
 
 if __name__ == '__main__':
