@@ -6,20 +6,23 @@ from pypika import Table, Query
 from typing import Optional, Any, Dict
 import uuid
 
+
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
         database=cfg.database,
-        user=cfg.user, 
+        user=cfg.user,
         password=cfg.password,
         host=cfg.host,
         port=cfg.port,
     )
+
 
 @dataclass
 class Channel:
     id: str
     params: Dict[str, Any]
     enabled: bool
+
 
 def create_channel(cfg: PostgreConfig, data: dict[str, Any]) -> Channel:
     conn = get_connection(cfg)
@@ -35,6 +38,7 @@ def create_channel(cfg: PostgreConfig, data: dict[str, Any]) -> Channel:
         params=data,
         enabled=True,
     )
+
 
 def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
     conn = get_connection(cfg)
@@ -52,14 +56,17 @@ def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
         enabled=result[1],
     )
 
-def update_channel(cfg: PostgreConfig,
-                   channel_id: str,
-                   data: Optional[dict[str, Any]],
-                   enabled: Optional[bool]):
+
+def update_channel(
+    cfg: PostgreConfig,
+    channel_id: str,
+    data: Optional[dict[str, Any]],
+    enabled: Optional[bool],
+):
     conn = get_connection(cfg)
     cur = conn.cursor()
-    channels_table = Table('channels')
-    query = Query.update('channels')
+    channels_table = Table("channels")
+    query = Query.update("channels")
     if data is not None:
         query = query.set(channels_table.params, json.dumps(data))
     if enabled is not None:
@@ -71,3 +78,17 @@ def update_channel(cfg: PostgreConfig,
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_channels(cfg: PostgreConfig) -> list[Channel]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, params, enabled FROM channels"
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        Channel(id=result[0], params=result[1], enabled=result[2]) for result in results
+    ]

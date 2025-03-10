@@ -54,3 +54,8 @@ services:
       - master
       - volume
       - filer
+  api:
+    build: backend/api
+    container_name: api
+    ports:
+      - 8083:8083
