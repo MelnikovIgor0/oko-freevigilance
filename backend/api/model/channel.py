@@ -3,8 +3,9 @@ from dataclasses import dataclass
 import json
 import psycopg2
 from pypika import Table, Query
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 import uuid
+
 
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
@@ -15,11 +16,13 @@ def get_connection(cfg: PostgreConfig):
         port=cfg.port,
     )
 
+
 @dataclass
 class Channel:
     id: str
     params: Dict[str, Any]
     enabled: bool
+
 
 def create_channel(cfg: PostgreConfig, data: dict[str, Any]) -> Channel:
     conn = get_connection(cfg)
@@ -36,6 +39,7 @@ def create_channel(cfg: PostgreConfig, data: dict[str, Any]) -> Channel:
         enabled=True,
     )
 
+
 def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
@@ -51,6 +55,7 @@ def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
         params=result[0],
         enabled=result[1],
     )
+
 
 def update_channel(cfg: PostgreConfig,
                    channel_id: str,
@@ -71,3 +76,16 @@ def update_channel(cfg: PostgreConfig,
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, params FROM channels WHERE enabled=true"
+    cur.execute(query)
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    if result is None:
+        return []
+    return [Channel(id=row[0], params=row[1], enabled=True) for row in result]

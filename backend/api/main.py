@@ -5,7 +5,7 @@ from config.config import parse_config
 from minio import Minio
 from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
-from model.channel import Channel, create_channel, get_channel_by_id, update_channel
+from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels
 from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id, update_monitoring_event_status
 from model.resource import Resource, create_resource, get_resource_by_id, update_resource
 from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
@@ -144,6 +144,20 @@ def new_channel():
         'params': channel.params,
         'enabled': channel.enabled,
     }}), 201
+
+
+@token_required
+@app.route('/channels/all', methods=['GET'])
+def find_all_channels():
+    channels = get_all_channels(cfg.postgres)
+    return jsonify({'channels': 
+                    [
+                        {
+                            'id': channel.id,
+                            'params': channel.params,
+                            'enabled': channel.enabled,
+                        } for channel in channels
+                    ]}), 200
 
 
 @token_required
