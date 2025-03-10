@@ -18,7 +18,8 @@ import base64
 from model.s3_interactor import create_bucket, add_object, get_object, get_image
 from util.html_parser import extract_text_from_html
 from util.cron import create_cron_job, kill_cron_job, update_cron_job
-from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource
+from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
+    get_last_snapshot_id
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -431,6 +432,20 @@ def get_event_text(event_id: str):
     text = extract_text_from_html(html)
     return jsonify({
         'text': text
+    }), 200
+
+
+@token_required
+@app.route('/resources/<resource_id>/last_snapshot_id', methods=['GET'])
+def get_event_last_snapshot_id(resource_id: str):
+    if not validate_uuid(resource_id):
+        return jsonify({'error': 'resource_id is invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': f'event {resource_id} not found'}), 404
+    last_snapshot = get_last_snapshot_id(cfg.s3, resource_id)
+    return jsonify({
+        'snapshot_id': last_snapshot
     }), 200
 
 
