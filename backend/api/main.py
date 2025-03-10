@@ -96,6 +96,12 @@ def logout():
     return jsonify({}), 200
 
 
+@token_required
+@app.route('/users/reset', methods=['POST'])
+def reset():
+    return jsonify({}), 200
+
+
 @app.route('/users/register', methods=['POST'])
 def register():
     body = request.get_json()
@@ -194,6 +200,18 @@ def patch_channel(channel_id: str):
         'params': channel_old.params if params is None else params,
         'enabled': channel_old.enabled if enabled is None else enabled,
     }}), 200
+
+
+@token_required
+@app.route('/channels/<channel_id>', methods=['DELETE'])
+def delete_channel(channel_id: str):
+    if not validate_uuid(channel_id):
+        return jsonify({'error': 'channel_id is invalid'}), 400
+    channel = get_channel_by_id(cfg.postgres, channel_id)
+    if channel is None:
+        return jsonify({'error': f'channel {channel_id} not found'}), 404
+    update_channel(cfg.postgres, channel_id, None, False)
+    return jsonify({}), 200
 
 
 @token_required
@@ -332,6 +350,20 @@ def patch_resorce(resource_id: str):
         'enabled': new_resource.enabled,
         'areas': new_resource.polygon
     }}), 200
+
+
+@token_required
+@app.route('/resources/<resource_id>', methods=['DELETE'])
+def delete_resource(resource_id: str):
+    if not validate_uuid(resource_id):
+        return jsonify({'error': 'resource_id is invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': 'resource not found'}), 404
+    update_resource(cfg.postgres, resource_id, None, None, None, False, None)
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    update_daemon_cron_job_for_resource(resource, cfg.server)
+    return jsonify({}), 200
 
 
 @token_required
