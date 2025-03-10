@@ -6,14 +6,16 @@ from pypika import Table, Query
 from typing import Optional, Any, List, Dict
 import uuid
 
+
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
         database=cfg.database,
-        user=cfg.user, 
+        user=cfg.user,
         password=cfg.password,
         host=cfg.host,
         port=cfg.port,
     )
+
 
 @dataclass
 class Resource:
@@ -27,21 +29,35 @@ class Resource:
     enabled: bool
     polygon: List[Dict[str, Any]]
 
+
 def create_resource(
-        cfg: PostgreConfig,
-        url: str,
-        name: str,
-        description: str,
-        keywords: List[str],
-        interval: str,
-        make_screenshot: bool,
-        polygon: List[Dict[str, Any]]
+    cfg: PostgreConfig,
+    url: str,
+    name: str,
+    description: str,
+    keywords: List[str],
+    interval: str,
+    make_screenshot: bool,
+    polygon: List[Dict[str, Any]],
 ):
     conn = get_connection(cfg)
     cur = conn.cursor()
     query = "INSERT INTO resources (id, url, name, description, key_words, interval, make_screenshot, enabled, monitoring_polygon) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     new_uid = str(uuid.uuid4())
-    cur.execute(query, (new_uid, url, name, description, keywords, interval, make_screenshot, True, json.dumps(polygon)))
+    cur.execute(
+        query,
+        (
+            new_uid,
+            url,
+            name,
+            description,
+            keywords,
+            interval,
+            make_screenshot,
+            True,
+            json.dumps(polygon),
+        ),
+    )
     conn.commit()
     cur.close()
     conn.close()
@@ -54,8 +70,9 @@ def create_resource(
         interval=interval,
         make_screenshot=make_screenshot,
         enabled=True,
-        polygon=polygon
+        polygon=polygon,
     )
+
 
 def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resource]:
     conn = get_connection(cfg)
@@ -76,19 +93,22 @@ def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resourc
         interval=result[4],
         make_screenshot=result[5],
         enabled=result[6],
-        polygon=result[7]
+        polygon=result[7],
     )
 
-def update_resource(cfg: PostgreConfig,
-                    resource_id: Optional[str],
-                    description: Optional[str],
-                    keywords: Optional[str],
-                    interval: Optional[str],
-                    enabled: Optional[bool],
-                    polygon: Optional[List[Dict[str, Any]]]) -> None:
+
+def update_resource(
+    cfg: PostgreConfig,
+    resource_id: Optional[str],
+    description: Optional[str],
+    keywords: Optional[str],
+    interval: Optional[str],
+    enabled: Optional[bool],
+    polygon: Optional[List[Dict[str, Any]]],
+) -> None:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    resources_table = Table('resources')
+    resources_table = Table("resources")
     query = Query.update(resources_table)
     if description is not None:
         query = query.set(resources_table.description, description)
@@ -107,3 +127,27 @@ def update_resource(cfg: PostgreConfig,
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_resources(cfg: PostgreConfig) -> List[Resource]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, url, name, description, key_words, interval, make_screenshot, enabled, monitoring_polygon FROM resources"
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [
+        Resource(
+            id=result[0],
+            url=result[1],
+            name=result[2],
+            description=result[3],
+            keywords=result[4],
+            interval=result[5],
+            make_screenshot=result[6],
+            enabled=result[7],
+            polygon=result[8],
+        )
+        for result in results
+    ]
