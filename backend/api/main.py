@@ -5,9 +5,9 @@ from config.config import parse_config
 from minio import Minio
 from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
-from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels
+from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels, get_channel_by_name
 from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id, update_monitoring_event_status
-from model.resource import Resource, create_resource, get_resource_by_id, update_resource
+from model.resource import Resource, create_resource, get_resource_by_id, update_resource, get_all_resources
 from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
@@ -96,12 +96,6 @@ def logout():
     return jsonify({}), 200
 
 
-@app.route('/access', methods=['GET'])
-@token_required
-def dummy_secret_handler():
-    return jsonify({'message': 'valid jwt token'})
-
-
 @app.route('/users/register', methods=['POST'])
 def register():
     body = request.get_json()
@@ -135,13 +129,21 @@ def register():
 @app.route('/channels/create', methods=['POST'])
 def new_channel():
     body = request.get_json()
+    name = body.get('name')
+    if name is None:
+        return jsonify({'error': 'name is missing'}), 400
+    if not validate_name(name):
+        return jsonify({'error': 'name is invalid'}), 400
+    channel = get_channel_by_name(cfg.postgres, name)
+    if channel is not None:
+        return jsonify({'error': 'channel already exists'}), 400
     params = body.get('params')
     if not params:
         return jsonify({'error': 'params are missing'}), 400
-    channel = create_channel(cfg.postgres, params)
+    channel = create_channel(cfg.postgres, params, name)
     return jsonify({'channel': {
         'id': channel.id,
-        'params': channel.params,
+        'name': channel.name,
         'enabled': channel.enabled,
     }}), 201
 
@@ -154,7 +156,7 @@ def find_all_channels():
                     [
                         {
                             'id': channel.id,
-                            'params': channel.params,
+                            'name': channel.name,
                             'enabled': channel.enabled,
                         } for channel in channels
                     ]}), 200
@@ -170,8 +172,8 @@ def get_channel(channel_id: str):
         return jsonify({'error': f'channel {channel_id} not found'}), 404
     return jsonify({'channel': {
         'id': channel.id,
-        'params': channel.params,
         'enabled': channel.enabled,
+        'name': channel.name,
     }}), 200
 
 
@@ -330,6 +332,23 @@ def patch_resorce(resource_id: str):
         'enabled': new_resource.enabled,
         'areas': new_resource.polygon
     }}), 200
+
+
+@token_required
+@app.route('/resources/all', methods=['GET'])
+def all_resources():
+    resources = get_all_resources(cfg.postgres)
+    return jsonify({'resources': [{
+        'id': resource.id,
+        'url': resource.url,
+        'name': resource.name,
+        'description': resource.description,
+        'keywords': resource.keywords,
+        'interval': resource.interval,
+        'make_screenshot': resource.make_screenshot,
+        'enabled': resource.enabled,
+        'areas': resource.polygon
+    } for resource in resources]}), 200
 
 
 @token_required

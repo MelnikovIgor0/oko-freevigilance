@@ -6,6 +6,7 @@ from pypika import Table, Query
 from typing import Optional, Any, List, Dict
 import uuid
 
+
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
         database=cfg.database,
@@ -14,6 +15,7 @@ def get_connection(cfg: PostgreConfig):
         host=cfg.host,
         port=cfg.port,
     )
+
 
 @dataclass
 class Resource:
@@ -26,6 +28,7 @@ class Resource:
     make_screenshot: bool
     enabled: bool
     polygon: List[Dict[str, Any]]
+
 
 def create_resource(
         cfg: PostgreConfig,
@@ -57,6 +60,7 @@ def create_resource(
         polygon=polygon
     )
 
+
 def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resource]:
     conn = get_connection(cfg)
     cur = conn.cursor()
@@ -78,6 +82,7 @@ def get_resource_by_id(cfg: PostgreConfig, resource_id: str) -> Optional[Resourc
         enabled=result[6],
         polygon=result[7]
     )
+
 
 def update_resource(cfg: PostgreConfig,
                     resource_id: Optional[str],
@@ -107,3 +112,24 @@ def update_resource(cfg: PostgreConfig,
     conn.commit()
     cur.close()
     conn.close()
+
+
+def get_all_resources(cfg: PostgreConfig) -> List[Resource]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT id, url, name, description, key_words, interval, make_screenshot, enabled, monitoring_polygon FROM resources WHERE enabled=true"
+    cur.execute(query)
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [Resource(
+        id=row[0],
+        url=row[1],
+        name=row[2],
+        description=row[3],
+        keywords=row[4],
+        interval=row[5],
+        make_screenshot=row[6],
+        enabled=row[7],
+        polygon=row[8]
+    ) for row in result]
