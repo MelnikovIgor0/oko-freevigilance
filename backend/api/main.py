@@ -470,6 +470,8 @@ def update_event(event_id: str):
     status = body.get('status')
     if status is not None and not validate_monitoring_event_status(status):
         return jsonify({'error': 'status is invalid'}), 400
+    if status in ['CREATED', 'NOTIFIED']:
+        return jsonify({'error': 'this status cannot be set manually'})
     update_monitoring_event_status(cfg.postgres, event_id, status)
     return jsonify({}), 200
 
