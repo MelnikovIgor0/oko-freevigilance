@@ -20,6 +20,7 @@ from util.html_parser import extract_text_from_html
 from util.cron import create_cron_job, kill_cron_job, update_cron_job
 from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
     get_last_snapshot_id, get_snapshot_times_by_resource_id, get_url_image_base_64
+from functools import wraps
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -29,6 +30,7 @@ print(cfg)
 
 
 def token_required(f):
+    @wraps(f)
     def decorated(*args, **kwargs):
         bearer = request.headers.get('Authorization')
         if not bearer:
@@ -96,8 +98,8 @@ def logout():
     return jsonify({}), 200
 
 
-@token_required
 @app.route('/users/reset', methods=['POST'])
+@token_required
 def reset():
     return jsonify({}), 200
 
@@ -131,8 +133,8 @@ def register():
     }}), 201
 
 
-@token_required
 @app.route('/channels/create', methods=['POST'])
+@token_required
 def new_channel():
     body = request.get_json()
     name = body.get('name')
@@ -154,8 +156,8 @@ def new_channel():
     }}), 201
 
 
-@token_required
 @app.route('/channels/all', methods=['GET'])
+@token_required
 def find_all_channels():
     channels = get_all_channels(cfg.postgres)
     return jsonify({'channels': 
@@ -168,8 +170,8 @@ def find_all_channels():
                     ]}), 200
 
 
-@token_required
 @app.route('/channels/<channel_id>', methods=['GET'])
+@token_required
 def get_channel(channel_id: str):
     if not validate_uuid(channel_id):
         return jsonify({'error': 'channel_id is invalid'}), 400
@@ -183,8 +185,8 @@ def get_channel(channel_id: str):
     }}), 200
 
 
-@token_required
 @app.route('/channels/<channel_id>', methods=['PATCH'])
+@token_required
 def patch_channel(channel_id: str):
     if not validate_uuid(channel_id):
         return jsonify({'error': 'channel_id is invalid'}), 400
@@ -202,8 +204,8 @@ def patch_channel(channel_id: str):
     }}), 200
 
 
-@token_required
 @app.route('/channels/<channel_id>', methods=['DELETE'])
+@token_required
 def delete_channel(channel_id: str):
     if not validate_uuid(channel_id):
         return jsonify({'error': 'channel_id is invalid'}), 400
@@ -214,8 +216,8 @@ def delete_channel(channel_id: str):
     return jsonify({}), 200
 
 
-@token_required
 @app.route('/resources/create', methods=['POST'])
+@token_required
 def new_resource():
     body = request.get_json()
     url = body.get('url')
@@ -291,8 +293,8 @@ def new_resource():
     }}), 201
 
 
-@token_required
 @app.route('/resources/<resource_id>', methods=['GET'])
+@token_required
 def get_resource(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -312,8 +314,8 @@ def get_resource(resource_id: str):
     }}), 200
 
 
-@token_required
 @app.route('/resources/<resource_id>', methods=['PATCH'])
+@token_required
 def patch_resorce(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -352,8 +354,8 @@ def patch_resorce(resource_id: str):
     }}), 200
 
 
-@token_required
 @app.route('/resources/<resource_id>', methods=['DELETE'])
+@token_required
 def delete_resource(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -366,8 +368,8 @@ def delete_resource(resource_id: str):
     return jsonify({}), 200
 
 
-@token_required
 @app.route('/resources/all', methods=['GET'])
+@token_required
 def all_resources():
     resources = get_all_resources(cfg.postgres)
     return jsonify({'resources': [{
@@ -383,8 +385,8 @@ def all_resources():
     } for resource in resources]}), 200
 
 
-@token_required
 @app.route('/add_channel_to_resource/', methods=['POST'])
+@token_required
 def add_channel_to_resource():
     body = request.get_json()
     resource_id = body.get('resource_id')
@@ -407,8 +409,8 @@ def add_channel_to_resource():
     return jsonify({'message': 'channel linked to resource'}), 201
 
 
-@token_required
 @app.route('/remove_channel_from_resource/', methods=['DELETE'])
+@token_required
 def remove_channel_from_resource():
     body = request.get_json()
     resource_id = body.get('resource_id')
@@ -429,8 +431,8 @@ def remove_channel_from_resource():
     return jsonify({}), 200
 
 
-@token_required
 @app.route('/channels_by_resource/<resource_id>', methods=['GET'])
+@token_required
 def get_channels_by_resource(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -445,8 +447,8 @@ def get_channels_by_resource(resource_id: str):
     return jsonify({'channels': active_channels}), 200
 
 
-@token_required
 @app.route('/events/<event_id>', methods=['GET'])
+@token_required
 def get_event(event_id: str):
     if not validate_uuid(event_id):
         return jsonify({'error': 'event_id is invalid'}), 400
@@ -456,8 +458,8 @@ def get_event(event_id: str):
     return jsonify({'event': event}), 200
 
 
-@token_required
 @app.route('/events/<event_id>', methods=['PATCH'])
+@token_required
 def update_event(event_id: str):
     if not validate_uuid(event_id):
         return jsonify({'error': 'event_id is invalid'}), 400
@@ -472,8 +474,8 @@ def update_event(event_id: str):
     return jsonify({}), 200
 
 
-@token_required
 @app.route('/events/<event_id>/snapshot', methods=['GET'])
+@token_required
 def get_event_snapshot(event_id: str):
     image = get_object(cfg.s3, 'images', event_id + '.png')
     if image is None:
@@ -484,8 +486,8 @@ def get_event_snapshot(event_id: str):
     }), 200
 
 
-@token_required
 @app.route('/events/<event_id>/text', methods=['GET'])
+@token_required
 def get_event_text(event_id: str):
     html = get_object(cfg.s3, 'htmls', event_id + '.html')
     if html is None:
@@ -496,8 +498,8 @@ def get_event_text(event_id: str):
     }), 200
 
 
-@token_required
 @app.route('/resources/<resource_id>/last_snapshot_id', methods=['GET'])
+@token_required
 def get_event_last_snapshot_id(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -510,8 +512,8 @@ def get_event_last_snapshot_id(resource_id: str):
     }), 200
 
 
-@token_required
 @app.route('/resource/<resource_id>/snapshot_times', methods=['GET'])
+@token_required
 def get_snapshot_times(resource_id: str):
     if not validate_uuid(resource_id):
         return jsonify({'error': 'resource_id is invalid'}), 400
@@ -522,8 +524,8 @@ def get_snapshot_times(resource_id: str):
     return jsonify({'snapshots': [{'id': resource_id + '_' + str(snapshot[1]), 'time': snapshot[0]} for snapshot in snapshots]})
 
 
-@token_required
 @app.route('/screenshot/', methods=['GET'])
+@token_required
 def get_screenshot():
     url = request.headers.get('url')
     if url is None:

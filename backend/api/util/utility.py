@@ -23,7 +23,6 @@ def build_query(resource: Resource, server_config: ServerConfig) -> str:
 
 def create_daemon_cron_job_for_resource(resource: Resource, server_config: ServerConfig) -> bool:
     query = build_query(resource, server_config)
-    print(query, resource.interval, resource.id)
     return create_cron_job(query, resource.interval, resource.id)
 
 
@@ -37,7 +36,6 @@ def update_daemon_cron_job_for_resource(resource: Resource, server_config: Serve
 def get_last_snapshot_id(cfg: S3Config, resource_id: str) -> int:
     images = get_all_files(cfg, 'images')
     htmls = get_all_files(cfg, 'htmls')
-    print(images)
     max_id = 0
     for image in images:
         if image['Key'].startswith(resource_id):
