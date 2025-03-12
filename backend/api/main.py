@@ -1,18 +1,16 @@
-from flask import Flask, request, make_response
+from flask import Flask, request
 from flask import jsonify
 from flask_cors import CORS
 from config.config import parse_config
-from minio import Minio
-from minio.error import S3Error
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id,\
     change_channel_resource_enabled
-from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels,\
+from model.channel import create_channel, get_channel_by_id, update_channel, get_all_channels,\
     get_channel_by_name
-from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id,\
+from model.monitoring_event import get_monitoring_event_by_id,\
     update_monitoring_event_status, filter_monitoring_events
-from model.resource import Resource, create_resource, get_resource_by_id, update_resource,\
+from model.resource import create_resource, get_resource_by_id, update_resource,\
     get_all_resources
-from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
+from model.user import create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
     get_interval, validate_monitoring_event_status, validate_date_time
@@ -20,12 +18,12 @@ import jwt
 import datetime
 import time
 import base64
-from model.s3_interactor import create_bucket, add_object, get_object, get_image
+from model.s3_interactor import get_object
 from util.html_parser import extract_text_from_html
 from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
     get_last_snapshot_id, get_snapshot_times_by_resource_id, get_url_image_base_64
 from functools import wraps
-from typing import Optional, Any, Dict, List
+import urllib.parse
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -531,12 +529,10 @@ def get_snapshot_times(resource_id: str):
     return jsonify({'snapshots': [{'id': resource_id + '_' + str(snapshot[1]), 'time': snapshot[0]} for snapshot in snapshots]})
 
 
-@app.route('/screenshot/', methods=['GET'])
+@app.route('/screenshot/<url>', methods=['GET'])
 @token_required
-def get_screenshot():
-    url = request.headers.get('url')
-    if url is None:
-        return jsonify({'error': 'url is missing'}), 400
+def get_screenshot(url: str):
+    url = urllib.parse.unquote(url)
     if not validate_url(url):
         return jsonify({'error': 'invalid url'}), 400
     screenshot = get_url_image_base_64(url)
