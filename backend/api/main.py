@@ -19,7 +19,7 @@ from model.s3_interactor import create_bucket, add_object, get_object, get_image
 from util.html_parser import extract_text_from_html
 from util.cron import create_cron_job, kill_cron_job, update_cron_job
 from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
-    get_last_snapshot_id
+    get_last_snapshot_id, get_snapshot_times_by_resource_id, get_url_image_base_64
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -230,7 +230,7 @@ def new_resource():
         return jsonify({'error': 'name is invalid'}), 400
     description = body.get('description')
     if not description:
-        return jsonify({'error': 'description is missing'}), 400
+        description = ''
     if not validate_description(description):
         return jsonify({'error': 'description is invalid'}), 400
     keywords = body.get('keywords')
@@ -475,8 +475,6 @@ def update_event(event_id: str):
 @token_required
 @app.route('/events/<event_id>/snapshot', methods=['GET'])
 def get_event_snapshot(event_id: str):
-    if not validate_uuid(event_id):
-        return jsonify({'error': 'event_id is invalid'}), 400
     image = get_object(cfg.s3, 'images', event_id + '.png')
     if image is None:
         return jsonify({'error': f'event {event_id} has no snapshot'}), 404
@@ -489,8 +487,6 @@ def get_event_snapshot(event_id: str):
 @token_required
 @app.route('/events/<event_id>/text', methods=['GET'])
 def get_event_text(event_id: str):
-    if not validate_uuid(event_id):
-        return jsonify({'error': 'event_id is invalid'}), 400
     html = get_object(cfg.s3, 'htmls', event_id + '.html')
     if html is None:
         return jsonify({'error': f'event {event_id} has no html'}), 404
@@ -507,12 +503,35 @@ def get_event_last_snapshot_id(resource_id: str):
         return jsonify({'error': 'resource_id is invalid'}), 400
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
-        return jsonify({'error': f'event {resource_id} not found'}), 404
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
     last_snapshot = get_last_snapshot_id(cfg.s3, resource_id)
     return jsonify({
         'snapshot_id': last_snapshot
     }), 200
 
+
+@token_required
+@app.route('/resource/<resource_id>/snapshot_times', methods=['GET'])
+def get_snapshot_times(resource_id: str):
+    if not validate_uuid(resource_id):
+        return jsonify({'error': 'resource_id is invalid'}), 400
+    resource = get_resource_by_id(cfg.postgres, resource_id)
+    if resource is None:
+        return jsonify({'error': f'resource {resource_id} not found'}), 400
+    snapshots = get_snapshot_times_by_resource_id(cfg.s3, resource_id)
+    return jsonify({'snapshots': [{'id': resource_id + '_' + str(snapshot[1]), 'time': snapshot[0]} for snapshot in snapshots]})
+
+
+@token_required
+@app.route('/screenshot/', methods=['GET'])
+def get_screenshot():
+    url = request.headers.get('url')
+    if url is None:
+        return jsonify({'error': 'url is missing'}), 400
+    if not validate_url(url):
+        return jsonify({'error': 'invalid url'}), 400
+    screenshot = get_url_image_base_64(url)
+    return jsonify({'screenshot': screenshot}), 200
 
 if __name__ == '__main__':
     app.run(host=cfg.server.host, port=cfg.server.port, debug=True)
