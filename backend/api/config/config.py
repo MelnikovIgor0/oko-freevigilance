@@ -21,6 +21,7 @@ class ServerConfig:
     port: str
     secret_key: str
     daemon_path: str
+    venv_path: str
 
 @dataclass
 class Config:

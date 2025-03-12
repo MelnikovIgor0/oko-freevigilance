@@ -37,14 +37,3 @@ def update_cron_job(command: str, schedule: str, id: str) -> bool:
         return True
     except:
         return False
-
-
-def main():
-    # create_cron_job('echo hello_world', '228')
-    # kill_cron_job('228') # убийство крон джобы не работает, посмотреть!!!
-    # create_cron_job('echo hello_world', '* * * * *', '228')
-    update_cron_job('echo hello_world', '*/10 * * * *', '228')
-
-
-if __name__ == '__main__':
-    main()

@@ -13,3 +13,4 @@ server:
   port: 8083
   secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3
   daemon_path: //home/igormeln2003/hse/diplom/repo/backend/daemon/daemon.py
+  venv_path: //home/igormeln2003/hse/diplom/venv/bin/activate
