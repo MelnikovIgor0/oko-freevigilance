@@ -479,7 +479,7 @@ def update_event(event_id: str):
     return jsonify({}), 200
 
 
-@app.route('/events/<event_id>/snapshot', methods=['GET'])
+@app.route('/events/<event_id>/screenshot', methods=['GET'])
 @token_required
 def get_event_snapshot(event_id: str):
     image = get_object(cfg.s3, 'images', event_id + '.png')
