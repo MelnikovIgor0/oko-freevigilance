@@ -21,7 +21,7 @@ class Config:
     s3: S3Config
 
 def parse_config() -> Config:
-    with open('config.yaml', 'r') as file:
+    with open('//home/igormeln2003/hse/diplom/repo/backend/daemon/config.yaml', 'r') as file:
         data = yaml.safe_load(file)
     return Config(
         postgres=PostgreConfig(**data['postgres']),

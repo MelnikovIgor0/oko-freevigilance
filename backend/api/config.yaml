@@ -12,4 +12,4 @@ server:
   host: 127.0.0.1
   port: 8083
   secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3
-  daemon_path: /home/igormeln2003/hse/diplom/repo/backend/daemon/daemon.py
+  daemon_path: //home/igormeln2003/hse/diplom/repo/backend/daemon/daemon.py
