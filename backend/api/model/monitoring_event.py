@@ -4,6 +4,7 @@ import psycopg2
 from typing import Optional, Any, Dict, List
 import uuid
 from datetime import datetime
+from pypika import Table, Query
 
 
 def get_connection(cfg: PostgreConfig):
@@ -66,6 +67,7 @@ def get_monitoring_event_by_id(cfg: PostgreConfig, event_id: str) -> Optional[Mo
         status=result[4]
     )
 
+
 def get_monitoring_events_by_resource_id(cfg: PostgreConfig, resource_id: str) -> List[MonitoringEvent]:
     conn = get_connection(cfg)
     cur = conn.cursor()
@@ -92,3 +94,39 @@ def update_monitoring_event_status(cfg: PostgreConfig, event_id: str, status: st
     conn.commit()
     cur.close()
     conn.close()
+
+
+def filter_monitoring_events(cfg: PostgreConfig,
+                             resource_ids: List[str],
+                             start_time: Optional[datetime],
+                             end_time: Optional[datetime],
+                             event_type: Optional[str]) -> List[MonitoringEvent]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    events_table = Table('monitoring_events')
+    query = Query.from_(events_table).select(events_table.id,
+                                             events_table.snapshot_id,
+                                             events_table.resource_id,
+                                             events_table.name,
+                                             events_table.created_at,
+                                             events_table.status)
+    if resource_ids is not None:
+        query = query.where(events_table.resource_id.isin(resource_ids))
+    if start_time is not None:
+        query = query.where(events_table.created_at >= start_time)
+    if end_time is not None:
+        query = query.where(events_table.created_at <= end_time)
+    if event_type is not None:
+        query = query.where(events_table.name.like(f'%{event_type}%'))
+    cur.execute(query.get_sql())
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [MonitoringEvent(
+        id=row[0],
+        snapshot_id=row[1],
+        resource_id=row[2],
+        name=row[3],
+        created_at=row[4],
+        status=row[5]
+    ) for row in result]

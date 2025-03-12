@@ -4,23 +4,28 @@ from flask_cors import CORS
 from config.config import parse_config
 from minio import Minio
 from minio.error import S3Error
-from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id, change_channel_resource_enabled
-from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels, get_channel_by_name
-from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id, update_monitoring_event_status
-from model.resource import Resource, create_resource, get_resource_by_id, update_resource, get_all_resources
+from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id,\
+    change_channel_resource_enabled
+from model.channel import Channel, create_channel, get_channel_by_id, update_channel, get_all_channels,\
+    get_channel_by_name
+from model.monitoring_event import MonitoringEvent, get_monitoring_event_by_id,\
+    update_monitoring_event_status, filter_monitoring_events
+from model.resource import Resource, create_resource, get_resource_by_id, update_resource,\
+    get_all_resources
 from model.user import User, create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
 from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
     validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
-    get_interval, validate_monitoring_event_status
+    get_interval, validate_monitoring_event_status, validate_date_time
 import jwt
 import datetime
+import time
 import base64
 from model.s3_interactor import create_bucket, add_object, get_object, get_image
 from util.html_parser import extract_text_from_html
-from util.cron import create_cron_job, kill_cron_job, update_cron_job
 from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
     get_last_snapshot_id, get_snapshot_times_by_resource_id, get_url_image_base_64
 from functools import wraps
+from typing import Optional, Any, Dict, List
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
@@ -536,6 +541,39 @@ def get_screenshot():
         return jsonify({'error': 'invalid url'}), 400
     screenshot = get_url_image_base_64(url)
     return jsonify({'screenshot': screenshot}), 200
+
+
+@app.route('/events/filter', methods=['POST'])
+@token_required
+def get_filtred_events():
+    body = request.get_json()
+    resource_ids = body.get('resource_ids')
+    if resource_ids is not None:
+        if type(resource_ids) is not list:
+            return jsonify({'error': 'resource_ids should be list'}), 400
+        for resource_id in resource_ids:
+            if not validate_uuid(resource_id):
+                return jsonify({'error': 'invalid resource_id value'}), 400
+    start_time = body.get('start_time')
+    if start_time is not None:
+        start_time = validate_date_time(start_time)
+        if start_time is None:
+            return jsonify({'error': 'start_time is invalid'}), 400
+    end_time = body.get('end_time')
+    if end_time is not None:
+        end_time = validate_date_time(end_time)
+        if end_time is None:
+            return jsonify({'error': 'end_time is invalid'}), 400
+    if start_time is not None and end_time is not None and start_time > end_time:
+        return jsonify({'error': 'end_time is more than start_time'}), 400
+    event_type = body.get('event_type')
+    if event_type is not None and event_type not in ['keyword', 'image']:
+        return jsonify({'error', 'type is invalid'}), 400
+    events = filter_monitoring_events(cfg.postgres, resource_ids, start_time, end_time, event_type)
+    return jsonify({
+        'events': events
+    }), 200
+
 
 if __name__ == '__main__':
     app.run(host=cfg.server.host, port=cfg.server.port, debug=True)

@@ -1,5 +1,6 @@
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 
 def validate_username(username: str) -> bool:
@@ -116,5 +117,17 @@ def validate_polygon(polygon: Dict[str, Any]) -> bool:
             return False
     return True
 
+
 def validate_monitoring_event_status(status: str) -> bool:
     return status in ['CREATED', 'NOTIFIED', 'WATCHED', 'REACTED']
+
+
+def validate_date_time(date_string: str) -> Optional[datetime]:
+    try:
+        date_part, time_part = date_string.split(" ")
+        year, month, day = map(int, date_part.split("-"))
+        hour, minute, second = map(int, time_part.split(":"))
+        date_object = datetime(year, month, day, hour, minute, second)
+        return date_object
+    except:
+        return None
