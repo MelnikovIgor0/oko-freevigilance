@@ -47,9 +47,14 @@ def token_required(f):
             return jsonify({'error': 'token is invalid/expired'}), 401
         user = get_user_by_email(cfg.postgres, email)
         if user is None:
-            return jsonify({'error': 'user not found'}), 404
+            return jsonify({'error': f'user {email} not found'}), 404
         return f(*args, **kwargs)
     return decorated
+
+
+@app.route('/liveness')
+def liveness_check():
+    return jsonify({'status': 'OK'}), 200
 
 
 @app.route('/users/login', methods=['POST'])
@@ -92,8 +97,13 @@ def info():
         return jsonify({'error': 'token is invalid/expired'}), 401
     user = get_user_by_email(cfg.postgres, email)
     if user is None:
-        return jsonify({'error': 'user not found'}), 404
-    return jsonify({'user': user})
+        return jsonify({'error': f'user {email} not found'}), 404
+    return jsonify({'user': {
+        'email': user.email,
+        'username': user.username,
+        'id': user.id,
+        'deleted_at': user.deleted_at
+    }})
 
 
 @app.route('/users/logout', methods=['POST'])
@@ -132,7 +142,6 @@ def register():
         'id': user.id,
         'username': user.username,
         'email': user.email,
-        'deleted_at': user.deleted_at,
     }}), 201
 
 
@@ -200,11 +209,7 @@ def patch_channel(channel_id: str):
     params = body.get('params')
     enabled = body.get('enabled')
     update_channel(cfg.postgres, channel_id, params, enabled)
-    return jsonify({'channel': {
-        'id': channel_id,
-        'params': channel_old.params if params is None else params,
-        'enabled': channel_old.enabled if enabled is None else enabled,
-    }}), 200
+    return jsonify({}), 200
 
 
 @app.route('/channels/<channel_id>', methods=['DELETE'])
@@ -324,7 +329,7 @@ def patch_resorce(resource_id: str):
         return jsonify({'error': 'resource_id is invalid'}), 400
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
-        return jsonify({'error': 'resource not found'}), 404
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
     body = request.get_json()
     description = body.get('description')
     if description is not None and not validate_description(description):
@@ -364,7 +369,7 @@ def delete_resource(resource_id: str):
         return jsonify({'error': 'resource_id is invalid'}), 400
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
-        return jsonify({'error': 'resource not found'}), 404
+        return jsonify({'error': f'resource {resource_id} not found'}), 404
     update_resource(cfg.postgres, resource_id, None, None, None, False, None)
     resource = get_resource_by_id(cfg.postgres, resource_id)
     update_daemon_cron_job_for_resource(resource, cfg.server)
