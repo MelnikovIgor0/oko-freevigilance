@@ -1,0 +1,18 @@
+postgres:
+  database: oko-freevigilance
+  user: postgres
+  password: pass1234
+  host: postgres
+  port: 5432
+
+s3:
+  connection_string: http://s3:8333
+  aws_access_key_id: s3
+  aws_secret_access_key: pass1234
+
+server:
+  host: 0.0.0.0
+  port: 8083
+  secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3
+  daemon_path: /app/daemon/daemon.py
+  venv_path: /app/venv/bin/activate
