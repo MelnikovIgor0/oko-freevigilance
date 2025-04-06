@@ -546,6 +546,17 @@ def get_event_text(snapshot_id: str):
     }), 200
 
 
+@app.route('/events/<snapshot_id>/html', methods=['GET'])
+@token_required
+def get_event_html(snapshot_id: str):
+    html = get_object(cfg.s3, 'htmls', snapshot_id + '.html')
+    if html is None:
+        return jsonify({'error': f'snapshot {snapshot_id} not found'}), 404
+    return jsonify({
+        'html': html
+    }), 200
+
+
 @app.route('/resources/<resource_id>/last_snapshot_id', methods=['GET'])
 @token_required
 def get_event_last_snapshot_id(resource_id: str):
