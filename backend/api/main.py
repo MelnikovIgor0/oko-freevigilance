@@ -338,8 +338,10 @@ def patch_resorce(resource_id: str):
     if keywords is not None and not validate_keywords(keywords):
         return jsonify({'error': 'keywords are invalid'}), 400
     interval = body.get('interval')
-    if interval is not None and not validate_interval(interval):
-        return jsonify({'error': 'interval is invalid'}), 400
+    if interval is not None:
+        if not validate_interval(interval):
+            return jsonify({'error': 'interval is invalid'}), 400
+        interval = get_interval(interval)
     enabled = body.get('enabled')
     polygon = body.get('areas')
     if polygon is not None and not validate_polygon(polygon):
@@ -484,24 +486,24 @@ def update_event(event_id: str):
     return jsonify({}), 200
 
 
-@app.route('/events/<event_id>/screenshot', methods=['GET'])
+@app.route('/events/<snapshot_id>/screenshot', methods=['GET'])
 @token_required
-def get_event_snapshot(event_id: str):
-    image = get_object(cfg.s3, 'images', event_id + '.png')
+def get_event_snapshot(snapshot_id: str):
+    image = get_object(cfg.s3, 'images', snapshot_id + '.png')
     if image is None:
-        return jsonify({'error': f'event {event_id} has no snapshot'}), 404
+        return jsonify({'error': f'screenshot {snapshot_id} not found'}), 404
     image_base64 = base64.b64encode(image).decode('utf-8')
     return jsonify({
         'image': image_base64
     }), 200
 
 
-@app.route('/events/<event_id>/text', methods=['GET'])
+@app.route('/events/<snapshot_id>/text', methods=['GET'])
 @token_required
-def get_event_text(event_id: str):
-    html = get_object(cfg.s3, 'htmls', event_id + '.html')
+def get_event_text(snapshot_id: str):
+    html = get_object(cfg.s3, 'htmls', snapshot_id + '.html')
     if html is None:
-        return jsonify({'error': f'event {event_id} has no html'}), 404
+        return jsonify({'error': f'snapshot {snapshot_id} not found'}), 404
     text = extract_text_from_html(html)
     return jsonify({
         'text': text

@@ -98,7 +98,7 @@ def update_resource(cfg: PostgreConfig,
     if description is not None:
         query = query.set(resources_table.description, description)
     if keywords is not None:
-        query = query.set(resources_table.key_words, keywords)
+        query = query.set(resources_table.key_words, json.dumps(keywords))
     if interval is not None:
         query = query.set(resources_table.interval, interval)
     if enabled is not None:
