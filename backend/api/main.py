@@ -3,7 +3,7 @@ from flask import jsonify
 from flask_cors import CORS
 from config.config import parse_config
 from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id,\
-    change_channel_resource_enabled
+    change_channel_resource_enabled, update_resource_channels
 from model.channel import create_channel, get_channel_by_id, update_channel, get_all_channels,\
     get_channel_by_name
 from model.monitoring_event import get_monitoring_event_by_id,\
@@ -301,6 +301,7 @@ def new_resource():
         'url': resource.url,
         'name': resource.name,
         'description': resource.description,
+        'channels': channels,
         'keywords': resource.keywords,
         'interval': resource.interval,
         'make_screenshot': resource.make_screenshot,
@@ -317,11 +318,17 @@ def get_resource(resource_id: str):
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
         return jsonify({'error': f'resource {resource_id} not found'}), 404
+    all_channels = get_channel_resource_by_resource_id(cfg.postgres, resource_id)
+    active_channels = []
+    for channel in all_channels:
+        if channel.enabled:
+            active_channels.append(channel.channel_id)
     return jsonify({'resource': {
         'id': resource.id,
         'url': resource.url,
         'name': resource.name,
         'description': resource.description,
+        'channels': active_channels,
         'keywords': resource.keywords,
         'interval': resource.interval,
         'make_screenshot': resource.make_screenshot,
@@ -354,8 +361,19 @@ def patch_resorce(resource_id: str):
     polygon = body.get('areas')
     if polygon is not None and not validate_polygon(polygon):
         return jsonify({'error': 'polygon is invalid'}), 400
+    channels = body.get('channels')
+    if channels is not None:
+        for channel_id in channels:
+            if not validate_uuid(channel_id):
+                return jsonify({'error': f'channel uuid {channel_id} is invalid'}), 400
+            channel = get_channel_by_id(cfg.postgres, channel_id)
+            if channel is None:
+                return jsonify({'error': f'channel {channel_id} not found'}), 404
     update_resource(cfg.postgres, resource_id, description, keywords, interval, enabled, polygon)
     new_resource = get_resource_by_id(cfg.postgres, resource_id)
+
+    if channels is not None:
+        update_resource_channels(cfg.postgres, resource_id, channels)
 
     update_daemon_cron_job_for_resource(new_resource, cfg.server)
 
@@ -364,6 +382,7 @@ def patch_resorce(resource_id: str):
         'url': new_resource.url,
         'name': new_resource.name,
         'description': new_resource.description,
+        'channels': channels,
         'keywords': new_resource.keywords,
         'interval': new_resource.interval,
         'make_screenshot': new_resource.make_screenshot,
@@ -390,17 +409,26 @@ def delete_resource(resource_id: str):
 @token_required
 def all_resources():
     resources = get_all_resources(cfg.postgres)
-    return jsonify({'resources': [{
-        'id': resource.id,
-        'url': resource.url,
-        'name': resource.name,
-        'description': resource.description,
-        'keywords': resource.keywords,
-        'interval': resource.interval,
-        'make_screenshot': resource.make_screenshot,
-        'enabled': resource.enabled,
-        'areas': resource.polygon
-    } for resource in resources]}), 200
+    result = []
+    for resource in resources:
+        all_channels = get_channel_resource_by_resource_id(cfg.postgres, resource.id)
+        active_channels = []
+        for channel in all_channels:
+            if channel.enabled:
+                active_channels.append(channel.channel_id)
+        result.append({
+            'id': resource.id,
+            'url': resource.url,
+            'name': resource.name,
+            'description': resource.description,
+            'channels': active_channels,
+            'keywords': resource.keywords,
+            'interval': resource.interval,
+            'make_screenshot': resource.make_screenshot,
+            'enabled': resource.enabled,
+            'areas': resource.polygon
+        })
+    return jsonify({'resources': result}), 200
 
 
 @app.route('/add_channel_to_resource/', methods=['POST'])

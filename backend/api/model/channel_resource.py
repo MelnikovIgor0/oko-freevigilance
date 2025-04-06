@@ -50,3 +50,29 @@ def change_channel_resource_enabled(cfg: PostgreConfig, channel_id: str, resourc
     conn.commit()
     cur.close()
     conn.close()
+
+
+def link_channel_to_resource(cfg: PostgreConfig, channel_id: str, resource_id: str) -> None:
+    linked_channels = get_channel_resource_by_resource_id(cfg, resource_id)
+    for channel in linked_channels:
+        if channel.channel_id == channel_id and not channel.enabled:
+            change_channel_resource_enabled(cfg, channel_id, resource_id, True)
+            return
+    create_channel_resource(cfg, channel_id, resource_id)
+
+
+def unlink_channel_from_resource(cfg: PostgreConfig, channel_id: str, resource_id: str) -> None:
+    linked_channels = get_channel_resource_by_resource_id(cfg, resource_id)
+    for channel in linked_channels:
+        if channel.channel.channel_id == channel_id and channel.enabled:
+            change_channel_resource_enabled(cfg, channel_id, resource_id, False)
+            return
+
+
+def update_resource_channels(cfg: PostgreConfig, resource_id: str, channels: List[str]) -> None:
+    linked_channels = get_channel_resource_by_resource_id(cfg, resource_id)
+    for channel in linked_channels:
+        if channel.enabled and channel.channel_id not in channels:
+            unlink_channel_from_resource(cfg, channel.channel_id, resource_id)
+    for channel in channels:
+        link_channel_to_resource(cfg, channel, resource_id)
