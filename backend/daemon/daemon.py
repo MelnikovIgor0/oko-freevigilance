@@ -226,7 +226,7 @@ def main():
         screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, args.area)
     print(keyword_events)
     print(screenshot_changed)
-    save_monitoring_events(cfg.postgres, args.resource_id, args.resource_id + '_' + str(snapshot_id), keyword_events, screenshot_changed)
+    save_monitoring_events(cfg.postgres, args.resource_id, args.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
 
 
 if __name__ == '__main__':

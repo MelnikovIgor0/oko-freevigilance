@@ -586,5 +586,14 @@ def get_filtred_events():
     }), 200
 
 
+@app.route('/events/all', methods=['GET'])
+@token_required
+def get_all_events():
+    events = filter_monitoring_events(cfg.postgres, None, None, None, None)
+    return jsonify({
+        'events': events
+    }), 200
+
+
 if __name__ == '__main__':
     app.run(host=cfg.server.host, port=cfg.server.port, debug=True)
