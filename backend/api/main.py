@@ -157,12 +157,18 @@ def new_channel():
     channel = get_channel_by_name(cfg.postgres, name)
     if channel is not None:
         return jsonify({'error': 'channel already exists'}), 400
+    type = body.get('type')
+    if type is None:
+        return jsonify({'error': 'type is missing'}), 400
+    if not validate_name(type):
+        return jsonify({'error': 'type is invalid'}), 400
     params = body.get('params')
     if not params:
         return jsonify({'error': 'params are missing'}), 400
-    channel = create_channel(cfg.postgres, params, name)
+    channel = create_channel(cfg.postgres, params, type, name)
     return jsonify({'channel': {
         'id': channel.id,
+        'type': channel.type,
         'name': channel.name,
         'enabled': channel.enabled,
     }}), 201
@@ -176,6 +182,7 @@ def find_all_channels():
                     [
                         {
                             'id': channel.id,
+                            'type': channel.type,
                             'name': channel.name,
                             'enabled': channel.enabled,
                         } for channel in channels
@@ -193,6 +200,7 @@ def get_channel(channel_id: str):
     return jsonify({'channel': {
         'id': channel.id,
         'enabled': channel.enabled,
+        'type': channel.type,
         'name': channel.name,
     }}), 200
 

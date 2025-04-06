@@ -20,22 +20,24 @@ def get_connection(cfg: PostgreConfig):
 @dataclass
 class Channel:
     id: str
+    type: str
     params: Dict[str, Any]
     enabled: bool
     name: str
 
 
-def create_channel(cfg: PostgreConfig, data: dict[str, Any], name: str) -> Channel:
+def create_channel(cfg: PostgreConfig, data: dict[str, Any], type: str, name: str) -> Channel:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "INSERT INTO channels (id, params, enabled, name) VALUES (%s, %s, %s, %s)"
+    query = "INSERT INTO channels (id, params, enabled, name, type) VALUES (%s, %s, %s, %s, %s)"
     new_uid = str(uuid.uuid4())
-    cur.execute(query, (new_uid, json.dumps(data), True, name))
+    cur.execute(query, (new_uid, json.dumps(data), True, name, type))
     conn.commit()
     cur.close()
     conn.close()
     return Channel(
         id=new_uid,
+        type=type,
         params=data,
         enabled=True,
         name=name,
@@ -45,7 +47,7 @@ def create_channel(cfg: PostgreConfig, data: dict[str, Any], name: str) -> Chann
 def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT params, enabled, name FROM channels WHERE id = %s"
+    query = "SELECT params, enabled, name, type FROM channels WHERE id = %s"
     cur.execute(query, (channel_id,))
     result = cur.fetchone()
     cur.close()
@@ -57,13 +59,14 @@ def get_channel_by_id(cfg: PostgreConfig, channel_id: str) -> Optional[Channel]:
         params=result[0],
         enabled=result[1],
         name=result[2],
+        type=result[3],
     )
 
 
 def get_channel_by_name(cfg: PostgreConfig, name: str) -> Optional[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, enabled, name FROM channels WHERE name = %s"
+    query = "SELECT id, params, enabled, name, type FROM channels WHERE name = %s"
     cur.execute(query, (name,))
     result = cur.fetchone()
     cur.close()
@@ -75,6 +78,7 @@ def get_channel_by_name(cfg: PostgreConfig, name: str) -> Optional[Channel]:
         params=result[1],
         enabled=result[2],
         name=name,
+        type=result[3],
     )
 
 
@@ -102,11 +106,11 @@ def update_channel(cfg: PostgreConfig,
 def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, name FROM channels WHERE enabled=true"
+    query = "SELECT id, params, name, type FROM channels WHERE enabled=true"
     cur.execute(query)
     result = cur.fetchall()
     cur.close()
     conn.close()
     if result is None:
         return []
-    return [Channel(id=row[0], params=row[1], enabled=True, name=row[2]) for row in result]
+    return [Channel(id=row[0], params=row[1], enabled=True, name=row[2], type=row[3]) for row in result]
