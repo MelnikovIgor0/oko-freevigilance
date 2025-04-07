@@ -571,7 +571,7 @@ def get_event_last_snapshot_id(resource_id: str):
     }), 200
 
 
-@app.route('/resource/<resource_id>/snapshot_times', methods=['GET'])
+@app.route('/resources/<resource_id>/snapshot_times', methods=['GET'])
 @token_required
 def get_snapshot_times(resource_id: str):
     if not validate_uuid(resource_id):

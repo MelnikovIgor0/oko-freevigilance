@@ -66,29 +66,12 @@ services:
   api:
     build:
       context: backend
-      dockerfile: api/Dockerfile
+      dockerfile: Dockerfile
     container_name: api
     ports:
       - "8083:8083"
     environment:
       - CONFIG_FILE=/app/config/docker.yaml
-    depends_on:
-      - postgres
-      - master
-      - volume
-      - filer
-      - s3
-
-  daemon:
-    build:
-      context: backend
-      dockerfile: daemon/Dockerfile
-    container_name: daemon
-    environment:
-      - CONFIG_FILE=/app/config/docker.yaml
-      - TEMP_DIR=/tmp
-    volumes:
-      - daemon_temp:/tmp
     depends_on:
       - postgres
       - master
