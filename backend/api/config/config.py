@@ -36,7 +36,7 @@ class Config:
 
 
 def parse_config() -> Config:
-    config_file = os.getenv("CONFIG_FILE", "config.yaml")
+    config_file = os.getenv("CONFIG_FILE", "../config/dev.yaml")
     with open(config_file, "r") as file:
         data = yaml.safe_load(file)
     return Config(
