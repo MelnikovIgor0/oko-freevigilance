@@ -11,7 +11,7 @@ import base64
 
 
 def build_query(resource: Resource, server_config: ServerConfig) -> str:
-    query = f'. {server_config.venv_path} && python3 {server_config.daemon_path}'
+    query = f'python3 {server_config.daemon_path}'
     query += f' -u {resource.url} -r {resource.id}'
     if resource.keywords is not None and len(resource.keywords) > 0:
         query += f' --keywords {",".join(resource.keywords)}'
