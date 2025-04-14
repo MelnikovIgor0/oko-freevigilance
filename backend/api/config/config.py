@@ -26,6 +26,7 @@ class ServerConfig:
     secret_key: str
     daemon_path: str
     venv_path: str
+    debug: bool
 
 
 @dataclass

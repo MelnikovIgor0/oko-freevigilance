@@ -100,18 +100,15 @@ def validate_polygon(polygon: Dict[str, Any]) -> bool:
     try:
         sensitivity = float(polygon['sensitivity'])
         if sensitivity < 0 or sensitivity > 100:
-            print('here1')
             return False
     except:
         return False
     for area_param in ['x', 'y', 'width', 'height']:
         if area_param not in polygon:
-            print('here2', area_param)
             return False
         try:
             area_param = float(polygon[area_param])
             if area_param < 0:
-                print('here3', area_param)
                 return False
         except:
             return False
