@@ -26,7 +26,7 @@ sleep 10
 
 # Starting service cron
 echo "Starting service cron..."
-CONTAINER_ID = $(docker ps --filter "name=api" --format "{{.ID}}")
+CONTAINER_ID=$(docker ps --filter "name=api" --format "{{.ID}}")
 docker exec $CONTAINER_ID service cron start
 
 # Check if services are running
