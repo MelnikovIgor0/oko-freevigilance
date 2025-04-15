@@ -45,7 +45,8 @@ def get_snapshot_times_by_resource_id(cfg: S3Config, resource_id: str) -> List[T
     images = get_all_files(cfg, 'images')
     dates = []
     for i in range(len(images)):
-        dates.append((images[i]['LastModified'], i + 1))
+        if images[i]['Key'].startswith(resource_id):
+            dates.append((images[i]['LastModified'], i + 1))
     return dates
 
 

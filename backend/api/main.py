@@ -1,27 +1,76 @@
-from flask import Flask, request
+from flask import (
+    Flask,
+    request,
+    Response
+)
 from flask import jsonify
 from flask_cors import CORS
 from config.config import parse_config
-from model.channel_resource import create_channel_resource, get_channel_resource_by_resource_id,\
-    change_channel_resource_enabled, update_resource_channels
-from model.channel import create_channel, get_channel_by_id, update_channel, get_all_channels,\
+from model.channel_resource import (
+    create_channel_resource,
+    get_channel_resource_by_resource_id,
+    change_channel_resource_enabled,
+    update_resource_channels
+)
+from model.channel import (
+    create_channel,
+    get_channel_by_id,
+    update_channel,
+    get_all_channels,
     get_channel_by_name
-from model.monitoring_event import get_monitoring_event_by_id,\
-    update_monitoring_event_status, filter_monitoring_events
-from model.resource import create_resource, get_resource_by_id, update_resource,\
+)
+from model.monitoring_event import (
+    get_monitoring_event_by_id,
+    update_monitoring_event_status,
+    filter_monitoring_events,
+    filter_monitoring_events_for_report
+)
+from model.resource import (
+    create_resource,
+    get_resource_by_id,
+    update_resource,
     get_all_resources
-from model.user import create_user, get_user_by_id, get_user_by_email, get_user_by_username, get_md5
-from validators import validate_username, validate_email, validate_password, validate_uuid, validate_url,\
-    validate_name, validate_description, validate_keywords, validate_interval, validate_polygon,\
-    get_interval, validate_monitoring_event_status, validate_date_time
+)
+from model.user import (
+    create_user,
+    get_user_by_id,
+    get_user_by_email,
+    get_user_by_username,
+    get_md5
+)
+from validators import (
+    validate_username,
+    validate_email,
+    validate_password,
+    validate_uuid,
+    validate_url,
+    validate_name,
+    validate_description,
+    validate_keywords,
+    validate_interval,
+    validate_polygon,
+    get_interval,
+    validate_monitoring_event_status,
+    validate_date_time
+)
 import jwt
+import csv
 import datetime
+import io
 import time
 import base64
-from model.s3_interactor import get_object
+from model.s3_interactor import (
+    get_object,
+    get_object_created_at
+)
 from util.html_parser import extract_text_from_html
-from util.utility import create_daemon_cron_job_for_resource, update_daemon_cron_job_for_resource,\
-    get_last_snapshot_id, get_snapshot_times_by_resource_id, get_url_image_base_64
+from util.utility import (
+    create_daemon_cron_job_for_resource,
+    update_daemon_cron_job_for_resource,
+    get_last_snapshot_id,
+    get_snapshot_times_by_resource_id,
+    get_url_image_base_64
+)
 from functools import wraps
 import urllib.parse
 
@@ -631,6 +680,72 @@ def get_filtred_events():
     return jsonify({
         'events': events
     }), 200
+
+
+@app.route('/report', methods=['POST'])
+@token_required
+def generate_repot():
+    body = request.get_json()
+    event_ids = body.get('event_ids')
+    snapshot_ids = body.get('snapshot_ids')
+    if event_ids is not None:
+        if not isinstance(event_ids, list):
+            return jsonify({'error': 'event_ids should be list'}), 400
+        for event_id in event_ids:
+            event = get_monitoring_event_by_id(cfg.postgres, event_id)
+            if event is None:
+                return jsonify({'error': f'event {event_id} not found'}), 404
+    if snapshot_ids is not None:
+        if not isinstance(snapshot_ids, list):
+            return jsonify({'error': 'snapshot_ids should be list'}), 400
+        for snapshot_id in snapshot_ids:
+            if not isinstance(snapshot_id, str):
+                return jsonify({'error': 'snapshot_ids should be list of strings'}), 400
+            if get_object_created_at(cfg.s3, 'images', snapshot_id + '.png') is None and get_object_created_at(cfg.s3, 'htmls', snapshot_id + '.html') is None:
+                return jsonify({'error': f'snapshot {snapshot_id} not found'}), 404
+    filtred_events = filter_monitoring_events_for_report(cfg.postgres, snapshot_ids, event_ids)
+    event_types_by_snapshot = dict()
+    if snapshot_ids is not None:
+        for snapshot_id in snapshot_ids:
+            event_types_by_snapshot[snapshot_id] = {
+                'image': False,
+                'text': False,
+                'resource_id': snapshot_id[:-2]
+            }
+    for event in filtred_events:
+        if event.snapshot_id not in event_types_by_snapshot:
+            event_types_by_snapshot[event.snapshot_id] = {
+                'image': False,
+                'text': False,
+                'resource_id': event.resource_id
+            }
+        if 'image' in event.name:
+            event_types_by_snapshot[event.snapshot_id]['image'] = True
+        else:
+            event_types_by_snapshot[event.snapshot_id]['text'] = True
+
+    csv_output = io.StringIO()
+    csv_writer = csv.writer(csv_output)
+    csv_writer.writerow(['resource_id', 'snapshot_id', 'time', 'image', 'text'])
+    for snapshot_id in event_types_by_snapshot.keys():
+        snapshot_time = get_object_created_at(cfg.s3, 'images', snapshot_id + '.png')
+        if snapshot_time is None:
+            snapshot_time = get_object_created_at(cfg.s3, 'htmls', snapshot_id + '.html')
+        csv_writer.writerow([event_types_by_snapshot[snapshot_id]['resource_id'],
+                             snapshot_id,
+                             snapshot_time,
+                             event_types_by_snapshot[snapshot_id]['image'],
+                             event_types_by_snapshot[snapshot_id]['text']])
+    csv_content = csv_output.getvalue()
+    response = Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment;filename=data.csv"
+        }
+    )
+    return response
+
 
 
 @app.route('/events/all', methods=['GET'])

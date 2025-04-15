@@ -47,7 +47,25 @@ def get_object(cfg: S3Config, bucket_name: str, object_name: str) -> Any:
     )
     try:
         response = s3.get_object(Bucket=bucket_name, Key=object_name)
+        print(response)
         return response['Body'].read()
+    except NoCredentialsError:
+        print("invalid credentials")
+        return None
+    except Exception:
+        return None
+
+
+def get_object_created_at(cfg: S3Config, bucket_name: str, object_name: str) -> Any:
+    s3 = boto3.client(
+        's3',
+        endpoint_url=cfg.connection_string,
+        aws_access_key_id=cfg.aws_access_key_id,
+        aws_secret_access_key=cfg.aws_secret_access_key,
+    )
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key=object_name)
+        return response['LastModified']
     except NoCredentialsError:
         print("invalid credentials")
         return None

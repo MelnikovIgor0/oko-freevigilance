@@ -130,3 +130,37 @@ def filter_monitoring_events(cfg: PostgreConfig,
         created_at=row[4],
         status=row[5]
     ) for row in result]
+
+
+def filter_monitoring_events_for_report(cfg: PostgreConfig,
+                                        snapshot_ids: Optional[List[str]],
+                                        event_ids: Optional[List[str]]) -> List[MonitoringEvent]:
+    if (snapshot_ids is None or len(snapshot_ids) == 0) and (event_ids is None or len(event_ids) == 0):
+        return []
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    events_table = Table('monitoring_events')
+    query = Query.from_(events_table).select(events_table.id,
+                                             events_table.snapshot_id,
+                                             events_table.resource_id,
+                                             events_table.name,
+                                             events_table.created_at,
+                                             events_table.status)
+    if snapshot_ids is not None and len(snapshot_ids) > 0 and event_ids is not None and len(event_ids) > 0:
+        query = query.where(events_table.snapshot_id.isin(snapshot_ids) | events_table.id.isin(event_ids))
+    elif event_ids is not None and len(event_ids) > 0:
+        query = query.where(events_table.id.isin(event_ids))
+    elif snapshot_ids is not None and len(snapshot_ids) > 0:
+        query = query.where(events_table.snapshot_id.isin(snapshot_ids))
+    cur.execute(query.get_sql())
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [MonitoringEvent(
+        id=row[0],
+        snapshot_id=row[1],
+        resource_id=row[2],
+        name=row[3],
+        created_at=row[4],
+        status=row[5]
+    ) for row in result]
