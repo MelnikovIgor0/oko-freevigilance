@@ -747,6 +747,64 @@ def generate_repot():
     return response
 
 
+@app.route('/events/list', methods=['POST'])
+@token_required
+def get_events_list():
+    body = request.get_json()
+    event_ids = body.get('event_ids')
+    snapshot_ids = body.get('snapshot_ids')
+    if event_ids is not None:
+        if not isinstance(event_ids, list):
+            return jsonify({'error': 'event_ids should be list'}), 400
+        for event_id in event_ids:
+            event = get_monitoring_event_by_id(cfg.postgres, event_id)
+            if event is None:
+                return jsonify({'error': f'event {event_id} not found'}), 404
+    if snapshot_ids is not None:
+        if not isinstance(snapshot_ids, list):
+            return jsonify({'error': 'snapshot_ids should be list'}), 400
+        for snapshot_id in snapshot_ids:
+            if not isinstance(snapshot_id, str):
+                return jsonify({'error': 'snapshot_ids should be list of strings'}), 400
+            if get_object_created_at(cfg.s3, 'images', snapshot_id + '.png') is None and get_object_created_at(cfg.s3, 'htmls', snapshot_id + '.html') is None:
+                return jsonify({'error': f'snapshot {snapshot_id} not found'}), 404
+    filtred_events = filter_monitoring_events_for_report(cfg.postgres, snapshot_ids, event_ids)
+    event_types_by_snapshot = dict()
+    if snapshot_ids is not None:
+        for snapshot_id in snapshot_ids:
+            event_types_by_snapshot[snapshot_id] = {
+                'image': False,
+                'text': False,
+                'resource_id': snapshot_id[:-2]
+            }
+    for event in filtred_events:
+        if event.snapshot_id not in event_types_by_snapshot:
+            event_types_by_snapshot[event.snapshot_id] = {
+                'image': False,
+                'text': False,
+                'resource_id': event.resource_id
+            }
+        if 'image' in event.name:
+            event_types_by_snapshot[event.snapshot_id]['image'] = True
+        else:
+            event_types_by_snapshot[event.snapshot_id]['text'] = True
+
+    result = []
+    for snapshot_id in event_types_by_snapshot.keys():
+        snapshot_time = get_object_created_at(cfg.s3, 'images', snapshot_id + '.png')
+        if snapshot_time is None:
+            snapshot_time = get_object_created_at(cfg.s3, 'htmls', snapshot_id + '.html')
+        result.append({
+            'resource_id': event_types_by_snapshot[snapshot_id]['resource_id'],
+            'snapshot_id': snapshot_id,
+            'snapshot_time': snapshot_time,
+            'image_changed': event_types_by_snapshot[snapshot_id]['image'],
+            'text_changed': event_types_by_snapshot[snapshot_id]['text']
+        })
+    return jsonify({
+        'events': result
+    }), 200
+
 
 @app.route('/events/all', methods=['GET'])
 @token_required
