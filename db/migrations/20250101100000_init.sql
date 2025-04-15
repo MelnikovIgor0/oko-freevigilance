@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS resources (
     description VARCHAR(1024),
     key_words VARCHAR(255)[],
   	interval VARCHAR(255) NOT NULL,
+	starts_from TIMESTAMP,
   	make_screenshot BOOLEAN NOT NULL,
   	enabled BOOLEAN NOT NULL,
   	monitoring_polygon JSONB

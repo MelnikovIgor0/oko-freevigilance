@@ -259,6 +259,11 @@ def new_resource():
     interval = body.get('interval')
     if not interval:
         return jsonify({'error': 'interval is missing'}), 400
+    starts_from = body.get('starts_from')
+    if starts_from is not None:
+        starts_from = validate_date_time(starts_from)
+        if not starts_from:
+            return jsonify({'error': 'starts from is invalid'}), 400
     if not validate_interval(interval):
         return jsonify({'error': 'interval is invalid'}), 400
     interval = get_interval(interval)
@@ -289,8 +294,7 @@ def new_resource():
         channel = get_channel_by_id(cfg.postgres, channel_id)
         if channel is None:
             return jsonify({'error': f'channel {channel_id} not found'}), 404
-    
-    resource = create_resource(cfg.postgres, url, name, description, keywords, interval, make_screenshot, polygon)
+    resource = create_resource(cfg.postgres, url, name, description, keywords, interval, starts_from, make_screenshot, polygon)
     for channel_id in channels:
         create_channel_resource(cfg.postgres, channel_id, resource.id)
 
@@ -304,6 +308,7 @@ def new_resource():
         'channels': channels,
         'keywords': resource.keywords,
         'interval': resource.interval,
+        'starts_from': resource.starts_from,
         'make_screenshot': resource.make_screenshot,
         'enabled': resource.enabled,
         'areas': resource.polygon
@@ -331,6 +336,7 @@ def get_resource(resource_id: str):
         'channels': active_channels,
         'keywords': resource.keywords,
         'interval': resource.interval,
+        'starts_from': resource.starts_from,
         'make_screenshot': resource.make_screenshot,
         'enabled': resource.enabled,
         'areas': resource.polygon
@@ -385,6 +391,7 @@ def patch_resorce(resource_id: str):
         'channels': channels,
         'keywords': new_resource.keywords,
         'interval': new_resource.interval,
+        'starts_from': new_resource.starts_from,
         'make_screenshot': new_resource.make_screenshot,
         'enabled': new_resource.enabled,
         'areas': new_resource.polygon
@@ -424,6 +431,7 @@ def all_resources():
             'channels': active_channels,
             'keywords': resource.keywords,
             'interval': resource.interval,
+            'starts_from': resource.starts_from,
             'make_screenshot': resource.make_screenshot,
             'enabled': resource.enabled,
             'areas': resource.polygon
