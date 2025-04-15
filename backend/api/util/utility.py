@@ -12,12 +12,7 @@ import base64
 
 def build_query(resource: Resource, server_config: ServerConfig) -> str:
     query = f'python3 {server_config.daemon_path}'
-    query += f' -u {resource.url} -r {resource.id}'
-    if resource.keywords is not None and len(resource.keywords) > 0:
-        query += f' --keywords {",".join(resource.keywords)}'
-    if resource.polygon is not None and len(resource.polygon) > 0:
-        polygon_str = f'{int(float(resource.polygon[0]["x"]))},{int(float(resource.polygon[0]["y"]))},{int(float(resource.polygon[0]["width"]))},{int(float(resource.polygon[0]["height"]))},{int(float(resource.polygon[0]["sensitivity"]))}'
-        query += f' --area {polygon_str}'
+    query += f' -r {resource.id}'
     return query
 
 

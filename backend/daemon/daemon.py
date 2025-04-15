@@ -2,10 +2,11 @@ import argparse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import urllib.request
 from bs4 import BeautifulSoup
 from config.config import parse_config, PostgreConfig, S3Config
+from dataclasses import dataclass
 from html.parser import HTMLParser
 import re
 import pymorphy2
@@ -17,13 +18,40 @@ import uuid
 from datetime import datetime
 
 
+@dataclass
+class ResourceMonitoringParams:
+    resource_id: str
+    url: str
+    polygon: Dict[str, Any]
+    keywords: List[str]
+    starts_from: Optional[datetime]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--url', type=str, required=True)
     parser.add_argument('-r', '--resource_id', type=str, required=True)
-    parser.add_argument('--keywords', type=str)
-    parser.add_argument('--area', type=str)
     return parser.parse_args()
+
+
+def get_resource_params(cfg: PostgreConfig, resource_id: str) -> Optional[ResourceMonitoringParams]:
+    conn = psycopg2.connect(
+        host=cfg.host,
+        database=cfg.database,
+        user=cfg.user,
+        password=cfg.password
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT url, monitoring_polygon, key_words, starts_from FROM resources WHERE id = %s", (resource_id,))
+    result = cur.fetchone()
+    if result is None:
+        return None
+    return ResourceMonitoringParams(
+        resource_id=resource_id,
+        url=result[0],
+        polygon=result[1],
+        keywords=result[2],
+        starts_from=result[3]
+    )
 
 
 def save_screenshot(cfg: S3Config, url: str, file_name: str) -> None:
@@ -123,18 +151,25 @@ def pixels_are_different(pixels1: Tuple[int, int, int], pixels2: Tuple[int, int,
 def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_path: Optional[str], area: str) -> bool:
     if old_screenshot_path is None:
         return False
-    zone = area.split(',')
-    x = int(zone[0])
-    y = int(zone[1])
-    width = int(zone[2])
-    height = int(zone[3])
-    sensitivity = int(zone[4])
+    x = int(area[0]['x'])
+    y = int(area[0]['y'])
+    width = int(area[0]['width'])
+    height = int(area[0]['height'])
+    sensitivity = int(area[0]['sensitivity'])
     total_size = width * height
     changed_count = 0
     img1 = get_image(cfg, 'images', screenshot_path)
     img2 = get_image(cfg, 'images', old_screenshot_path)
     pixels1 = img1.load()
-    pixels2 = img2.load()    
+    pixels2 = img2.load()
+    if x < 0 or y < 0:
+        return False
+    out_of_img1 = (x + width > img1.size[0]) or (y + height > img1.size[1])
+    out_of_img2 = (x + width > img2.size[0]) or (y + height > img2.size[1])
+    if out_of_img1 and out_of_img2:
+        return False
+    if out_of_img1 or out_of_img2:
+        return True
     for i in range(x, x + width):
         for j in range(y, y + height):
             if pixels_are_different(pixels1[i, j], pixels2[i, j]):
@@ -179,11 +214,6 @@ def save_monitoring_events(cfg: PostgreConfig, resource_id: str, snapshot_id: st
     conn.close()
 
 
-def save_keywords_events(cfg: PostgreConfig, events: List[str]) -> None:
-    for event in events:
-        pass
-
-
 def get_last_snapshot_id(cfg: S3Config, resource_id: str) -> int:
     images = get_all_files(cfg, 'images')
     htmls = get_all_files(cfg, 'htmls')
@@ -202,31 +232,39 @@ def main():
     print(cfg)
     args = parse_args()
     print(args)
+    params = get_resource_params(cfg.postgres, args.resource_id)
+    if params is None:
+        print('Resource not found')
+        return
+    if params.starts_from is not None and params.starts_from < datetime.now().utcnow():
+        print('Resource is not active')
+        return
+    print(params)
 
-    snapshot_id = get_last_snapshot_id(cfg.s3, args.resource_id)
+    snapshot_id = get_last_snapshot_id(cfg.s3, params.resource_id)
     screenshot_path = None
     screenshot_prev_path = None
     html_path = None
     html_prev_path = None
-    if args.keywords is not None and len(args.keywords) > 0:
-        html_path = args.resource_id + '_' + str(snapshot_id + 1) + '.html'
+    if params.keywords is not None and len(params.keywords) > 0:
+        html_path = params.resource_id + '_' + str(snapshot_id + 1) + '.html'
         if snapshot_id > 0:
-            html_prev_path = args.resource_id + '_' + str(snapshot_id) + '.html'
-    if args.area is not None and len(args.area) > 0:
-        screenshot_path = args.resource_id + '_' + str(snapshot_id + 1) + '.png'
+            html_prev_path = params.resource_id + '_' + str(snapshot_id) + '.html'
+    if params.polygon is not None and len(params.polygon) > 0:
+        screenshot_path = params.resource_id + '_' + str(snapshot_id + 1) + '.png'
         if snapshot_id > 0:
-            screenshot_prev_path = args.resource_id + '_' + str(snapshot_id) + '.png'
+            screenshot_prev_path = params.resource_id + '_' + str(snapshot_id) + '.png'
 
-    monitor_url(cfg.s3, args.url, screenshot_path, html_path)
+    monitor_url(cfg.s3, params.url, screenshot_path, html_path)
     keyword_events = []
-    if args.keywords:
-        keyword_events = get_keywords_events(cfg.s3, html_path, html_prev_path, args.keywords.split(','))
+    if params.keywords:
+        keyword_events = get_keywords_events(cfg.s3, html_path, html_prev_path, params.keywords)
     screenshot_changed = False
-    if args.area:
-        screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, args.area)
+    if params.polygon:
+        screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, params.polygon)
     print(keyword_events)
     print(screenshot_changed)
-    save_monitoring_events(cfg.postgres, args.resource_id, args.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
+    save_monitoring_events(cfg.postgres, params.resource_id, params.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
 
 
 if __name__ == '__main__':
