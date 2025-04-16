@@ -79,6 +79,16 @@ services:
       - filer
       - s3
 
+  bot:
+    build:
+      context: telegram_bot
+      dockerfile: Dockerfile
+    container_name: telegram_bot
+    ports:
+      - "8084:8084"
+    environment:
+      - BOT_CONFIG_FILE=/config/config.yaml
+
 volumes:
   postgres_data:
   daemon_temp:
