@@ -16,6 +16,7 @@ from io import BytesIO
 import psycopg2
 import uuid
 from datetime import datetime
+import telebot
 
 
 @dataclass
@@ -187,27 +188,74 @@ def get_connection(cfg: PostgreConfig):
     )
 
 
+def notify_about_event_tg(chat_id: int, event_id: str, message: str) -> bool:
+    try:
+        bot = telebot.TeleBot('')
+        bot.send_message(chat_id, f'❗**Новое событие мониторинга: {event_id}**❗\n\n{message}', parse_mode='Markdown')
+        return True
+    except Exception as e:
+        return False
+
+
+def notify_by_all_channels(channels_data: List[Tuple[str, str]], event_id: str, message: str) -> bool:
+    notified = False
+    for channel_type, channel_params in channels_data:
+        if channel_type == 'telegram':
+            chat_id = channel_params['chat_id']
+            notified = notify_about_event_tg(chat_id, event_id, message) or notified
+    return notified
+
+
+def get_notification_channels(cfg: PostgreConfig, resource_id: str) -> List[Tuple[str, str]]:
+    conn = get_connection(cfg)
+    cur = conn.cursor()
+    query = "SELECT channel_id FROM channel_resource WHERE resource_id = %s AND enabled = true"
+    cur.execute(query, (resource_id,))
+    result = cur.fetchall()
+    channel_ids = [row[0] for row in result]
+    query = "SELECT type, params FROM channels WHERE id IN %s AND enabled = true"
+    cur.execute(query, (tuple(channel_ids),))
+    result = cur.fetchall()
+    channels_data = [(row[0], row[1]) for row in result]
+    cur.close()
+    conn.close()
+    return channels_data
+
+
 def save_monitoring_events(cfg: PostgreConfig, resource_id: str, snapshot_id: str, events: List[str], image_changed: bool) -> None:
+    if len(events) == 0 and not image_changed:
+        return
+    channels_data = get_notification_channels(cfg, resource_id)
     conn = get_connection(cfg)
     cur = conn.cursor()
     query = "INSERT INTO monitoring_events (id, name, snapshot_id, resource_id, created_at, status) VALUES (%s, %s, %s, %s, %s, %s)"
     for word in events:
+        status = 'CREATED'
+        event_id = str(uuid.uuid4())
+        event_message = f"keyword {word} detected"
+        if notify_by_all_channels(channels_data, event_id, event_message):
+            status = 'NOTIFIED'
         cur.execute(query, (
-            str(uuid.uuid4()),
-            f"keyword {word} detected",
+            event_id,
+            event_message,
             snapshot_id,
             resource_id,
             datetime.now().utcnow(),
-            'CREATED',
+            status,
         ))
     if image_changed:
+        status = 'CREATED'
+        event_id = str(uuid.uuid4())
+        event_message = f"image changed"
+        if notify_by_all_channels(channels_data, event_id, event_message):
+            status = 'NOTIFIED'
         cur.execute(query, (
-            str(uuid.uuid4()),
-            "image changed",
+            event_id,
+            event_message,
             snapshot_id,
             resource_id,
             datetime.now().utcnow(),
-            'CREATED',
+            status,
         ))
     conn.commit()
     cur.close()

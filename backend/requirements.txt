@@ -9,6 +9,7 @@ psycopg2-binary==2.9.10
 PyJWT==2.10.1
 pymorphy2==0.9.1
 pypika==0.48.9
+pyTelegramBotAPI==4.26.0
 python-crontab==3.2.0
 PyYAML==6.0.2
 requests==2.32.3
