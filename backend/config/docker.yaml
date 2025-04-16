@@ -1,3 +1,6 @@
+notification:
+  telegram_token: XXX
+
 postgres:
   database: oko-freevigilance
   user: postgres

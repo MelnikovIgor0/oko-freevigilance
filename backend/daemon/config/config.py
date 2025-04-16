@@ -20,9 +20,15 @@ class S3Config:
 
 
 @dataclass
+class NotificationConfig:
+    telegram_token: str
+
+
+@dataclass
 class Config:
     postgres: PostgreConfig
     s3: S3Config
+    notification: NotificationConfig
 
 
 def parse_config() -> Config:
@@ -32,4 +38,5 @@ def parse_config() -> Config:
     return Config(
         postgres=PostgreConfig(**data["postgres"]),
         s3=S3Config(**data["s3"]),
+        notification=NotificationConfig(**data["notification"]),
     )

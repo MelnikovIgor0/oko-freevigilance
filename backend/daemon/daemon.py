@@ -5,7 +5,7 @@ import time
 from typing import Dict, List, Optional, Tuple, Any
 import urllib.request
 from bs4 import BeautifulSoup
-from config.config import parse_config, PostgreConfig, S3Config
+from config.config import parse_config, NotificationConfig, PostgreConfig, S3Config
 from dataclasses import dataclass
 from html.parser import HTMLParser
 import re
@@ -188,21 +188,21 @@ def get_connection(cfg: PostgreConfig):
     )
 
 
-def notify_about_event_tg(chat_id: int, event_id: str, message: str) -> bool:
+def notify_about_event_tg(token: str, chat_id: int, event_id: str, message: str) -> bool:
     try:
-        bot = telebot.TeleBot('')
+        bot = telebot.TeleBot(token)
         bot.send_message(chat_id, f'❗**Новое событие мониторинга: {event_id}**❗\n\n{message}', parse_mode='Markdown')
         return True
     except Exception as e:
         return False
 
 
-def notify_by_all_channels(channels_data: List[Tuple[str, str]], event_id: str, message: str) -> bool:
+def notify_by_all_channels(notification_config: NotificationConfig, channels_data: List[Tuple[str, str]], event_id: str, message: str) -> bool:
     notified = False
     for channel_type, channel_params in channels_data:
         if channel_type == 'telegram':
             chat_id = channel_params['chat_id']
-            notified = notify_about_event_tg(chat_id, event_id, message) or notified
+            notified = notify_about_event_tg(notification_config.telegram_token, chat_id, event_id, message) or notified
     return notified
 
 
@@ -222,18 +222,18 @@ def get_notification_channels(cfg: PostgreConfig, resource_id: str) -> List[Tupl
     return channels_data
 
 
-def save_monitoring_events(cfg: PostgreConfig, resource_id: str, snapshot_id: str, events: List[str], image_changed: bool) -> None:
+def save_monitoring_events(postgre_cfg: PostgreConfig, notification_cfg: NotificationConfig, resource_id: str, snapshot_id: str, events: List[str], image_changed: bool) -> None:
     if len(events) == 0 and not image_changed:
         return
-    channels_data = get_notification_channels(cfg, resource_id)
-    conn = get_connection(cfg)
+    channels_data = get_notification_channels(postgre_cfg, resource_id)
+    conn = get_connection(postgre_cfg)
     cur = conn.cursor()
     query = "INSERT INTO monitoring_events (id, name, snapshot_id, resource_id, created_at, status) VALUES (%s, %s, %s, %s, %s, %s)"
     for word in events:
         status = 'CREATED'
         event_id = str(uuid.uuid4())
         event_message = f"keyword {word} detected"
-        if notify_by_all_channels(channels_data, event_id, event_message):
+        if notify_by_all_channels(notification_cfg, channels_data, event_id, event_message):
             status = 'NOTIFIED'
         cur.execute(query, (
             event_id,
@@ -247,7 +247,7 @@ def save_monitoring_events(cfg: PostgreConfig, resource_id: str, snapshot_id: st
         status = 'CREATED'
         event_id = str(uuid.uuid4())
         event_message = f"image changed"
-        if notify_by_all_channels(channels_data, event_id, event_message):
+        if notify_by_all_channels(notification_cfg, channels_data, event_id, event_message):
             status = 'NOTIFIED'
         cur.execute(query, (
             event_id,
@@ -312,7 +312,7 @@ def main():
         screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, params.polygon)
     print(keyword_events)
     print(screenshot_changed)
-    save_monitoring_events(cfg.postgres, params.resource_id, params.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
+    save_monitoring_events(cfg.postgres, cfg.notification, params.resource_id, params.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
 
 
 if __name__ == '__main__':
