@@ -21,6 +21,8 @@ class S3Config:
 
 @dataclass
 class NotificationConfig:
+    email_from: str
+    email_token: str
     telegram_token: str
 
 

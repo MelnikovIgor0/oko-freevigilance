@@ -2,16 +2,34 @@ import argparse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
-from typing import Dict, List, Optional, Tuple, Any
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Any
+)
 import urllib.request
 from bs4 import BeautifulSoup
-from config.config import parse_config, NotificationConfig, PostgreConfig, S3Config
+from config.config import (
+    parse_config,
+    NotificationConfig,
+    PostgreConfig,
+    S3Config
+)
 from dataclasses import dataclass
 from html.parser import HTMLParser
 import re
 import pymorphy2
 from PIL import Image
-from s3_interactor import add_object, create_bucket, get_object, get_all_files, get_image
+from s3_interactor import (
+    add_object,
+    create_bucket,
+    get_all_files,
+    get_object,
+    get_image
+)
+from mail_iteractor import send_email
 from io import BytesIO
 import psycopg2
 import uuid
@@ -202,7 +220,17 @@ def notify_by_all_channels(notification_config: NotificationConfig, channels_dat
     for channel_type, channel_params in channels_data:
         if channel_type == 'telegram':
             chat_id = channel_params['chat_id']
-            notified = notify_about_event_tg(notification_config.telegram_token, chat_id, event_id, message) or notified
+            if isinstance(chat_id, str):
+                notified = notify_about_event_tg(notification_config.telegram_token, chat_id, event_id, message) or notified
+            elif isinstance(chat_id, list):
+                for current_chat_id in chat_id:
+                    notified = notify_about_event_tg(notification_config.telegram_token, current_chat_id, event_id, message) or notified
+        elif channel_type == 'email':
+            notified = send_email(notification_config.email_from,
+                                  notification_config.email_token,
+                                  channel_params['email'],
+                                  message,
+                                  f'обнаружено событие мониторинга: {event_id}') or notified
     return notified
 
 

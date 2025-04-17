@@ -1,4 +1,6 @@
 notification:
+  email_from: XXX
+  email_token: XXX
   telegram_token: XXX
 
 postgres:
