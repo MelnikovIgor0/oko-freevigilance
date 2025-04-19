@@ -693,10 +693,13 @@ def get_snapshot_times(resource_id: str):
     return jsonify({'snapshots': [{'id': resource_id + '_' + str(snapshot[1]), 'time': snapshot[0]} for snapshot in snapshots]})
 
 
-@app.route('/screenshot/<url>', methods=['GET'])
+@app.route('/screenshot/', methods=['POST'])
 @token_required
 def get_screenshot(url: str):
-    url = urllib.parse.unquote(url)
+    body = request.get_json()
+    url = body.get('url')
+    if url is None:
+        return jsonify({'error': 'url is required'}), 400
     if not validate_url(url):
         return jsonify({'error': 'invalid url'}), 400
     screenshot = get_url_image_base_64(url)
