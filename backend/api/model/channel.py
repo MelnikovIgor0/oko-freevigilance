@@ -10,7 +10,7 @@ import uuid
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
         database=cfg.database,
-        user=cfg.user, 
+        user=cfg.user,
         password=cfg.password,
         host=cfg.host,
         port=cfg.port,
@@ -26,7 +26,9 @@ class Channel:
     name: str
 
 
-def create_channel(cfg: PostgreConfig, data: dict[str, Any], type: str, name: str) -> Channel:
+def create_channel(
+    cfg: PostgreConfig, data: dict[str, Any], type: str, name: str
+) -> Channel:
     conn = get_connection(cfg)
     cur = conn.cursor()
     query = "INSERT INTO channels (id, params, enabled, name, type) VALUES (%s, %s, %s, %s, %s)"
@@ -82,14 +84,16 @@ def get_channel_by_name(cfg: PostgreConfig, name: str) -> Optional[Channel]:
     )
 
 
-def update_channel(cfg: PostgreConfig,
-                   channel_id: str,
-                   data: Optional[dict[str, Any]],
-                   enabled: Optional[bool]):
+def update_channel(
+    cfg: PostgreConfig,
+    channel_id: str,
+    data: Optional[dict[str, Any]],
+    enabled: Optional[bool],
+):
     conn = get_connection(cfg)
     cur = conn.cursor()
-    channels_table = Table('channels')
-    query = Query.update('channels')
+    channels_table = Table("channels")
+    query = Query.update("channels")
     if data is not None:
         query = query.set(channels_table.params, json.dumps(data))
     if enabled is not None:
@@ -106,11 +110,14 @@ def update_channel(cfg: PostgreConfig,
 def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, name, type FROM channels WHERE"
+    query = "SELECT id, params, name, type FROM channels"
     cur.execute(query)
     result = cur.fetchall()
     cur.close()
     conn.close()
     if result is None:
         return []
-    return [Channel(id=row[0], params=row[1], enabled=True, name=row[2], type=row[3]) for row in result]
+    return [
+        Channel(id=row[0], params=row[1], enabled=True, name=row[2], type=row[3])
+        for row in result
+    ]
