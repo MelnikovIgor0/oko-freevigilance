@@ -57,8 +57,12 @@ import jwt
 import csv
 import datetime
 import io
+import os
+import json
 import time
 import base64
+import logging
+import uuid
 from model.s3_interactor import (
     get_object,
     get_object_created_at
@@ -75,6 +79,49 @@ from functools import wraps
 import urllib.parse
 
 app = Flask(__name__)
+
+os.makedirs("/var/log/api", exist_ok=True)
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": int(time.time() * 1000),  # миллисекунды для совместимости с Loki
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "request_id": getattr(record, 'request_id', ''),
+            "path": getattr(record, 'path', ''),
+            "method": getattr(record, 'method', '')
+        }
+        return json.dumps(log_record)
+
+logger = logging.getLogger("api")
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler("/var/log/api/app.log")
+file_handler.setFormatter(JsonFormatter())
+logger.addHandler(file_handler)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(JsonFormatter())
+logger.addHandler(console_handler)
+
+@app.before_request
+def before_request():
+    request.request_id = str(uuid.uuid4())
+
+@app.after_request
+def after_request(response):
+    log_data = {
+        'request_id': getattr(request, 'request_id', ''),
+        'path': request.path,
+        'method': request.method,
+        'status': response.status_code
+    }
+    logger.info(
+        f"Request processed: {request.method} {request.path} - {response.status_code}",
+        extra=log_data
+    )
+    return response
+
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True) 
 
 cfg = parse_config()
@@ -103,6 +150,12 @@ def token_required(f):
 
 @app.route('/liveness')
 def liveness_check():
+    logger.info("Echoing data", extra={
+        'request_id': getattr(request, 'request_id', ''),
+        'path': request.path,
+        'method': request.method,
+        'data': str("liveness check")
+    })
     return jsonify({'status': 'OK'}), 200
 
 

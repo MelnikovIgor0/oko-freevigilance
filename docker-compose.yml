@@ -62,6 +62,49 @@ services:
       - master
       - volume
       - filer
+  
+  promtail:
+    image: grafana/promtail:2.7.0
+    container_name: promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+      - app_logs:/var/log/microservice:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - microservice-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.7.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/config.yml
+      - loki_data:/tmp/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - microservice-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:9.4.7
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - microservice-network
+    depends_on:
+      - loki
+    restart: unless-stopped
 
   api:
     build:
@@ -78,6 +121,11 @@ services:
       - volume
       - filer
       - s3
+      - grafana
+      - loki
+      - promtail
+    networks:
+      - microservice-network
 
   bot:
     build:
@@ -88,7 +136,18 @@ services:
       - "8084:8084"
     environment:
       - BOT_CONFIG_FILE=/config/config.yaml
+    depends_on:
+      - grafana
+      - loki
+      - promtail
 
 volumes:
-  postgres_data:
+  app_logs:
   daemon_temp:
+  grafana_data:
+  loki_data:
+  postgres_data:
+
+networks:
+  microservice-network:
+    driver: bridge
