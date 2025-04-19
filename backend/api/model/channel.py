@@ -106,7 +106,7 @@ def update_channel(cfg: PostgreConfig,
 def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, name, type FROM channels WHERE enabled=true"
+    query = "SELECT id, params, name, type FROM channels WHERE"
     cur.execute(query)
     result = cur.fetchall()
     cur.close()
