@@ -695,7 +695,7 @@ def get_snapshot_times(resource_id: str):
 
 @app.route('/screenshot/', methods=['POST'])
 @token_required
-def get_screenshot(url: str):
+def get_screenshot():
     body = request.get_json()
     url = body.get('url')
     if url is None:

@@ -13,6 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservice-network
 
   master:
     image: chrislusf/seaweedfs
@@ -22,6 +24,8 @@ services:
       - "19333:19333"
       - "9324:9324"
     command: "master -ip=master -ip.bind=0.0.0.0 -metricsPort=9324"
+    networks:
+      - microservice-network
 
   volume:
     image: chrislusf/seaweedfs
@@ -33,6 +37,8 @@ services:
     command: 'volume -mserver="master:9333" -ip.bind=0.0.0.0 -port=8080 -metricsPort=9325'
     depends_on:
       - master
+    networks:
+      - microservice-network
 
   filer:
     image: chrislusf/seaweedfs
@@ -47,6 +53,8 @@ services:
     depends_on:
       - master
       - volume
+    networks:
+      - microservice-network
 
   s3:
     image: chrislusf/seaweedfs
@@ -62,6 +70,8 @@ services:
       - master
       - volume
       - filer
+    networks:
+      - microservice-network
   
   promtail:
     image: grafana/promtail:2.7.0
@@ -140,6 +150,8 @@ services:
       - grafana
       - loki
       - promtail
+    networks:
+      - microservice-network
 
 volumes:
   app_logs:
