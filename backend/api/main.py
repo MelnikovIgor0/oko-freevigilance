@@ -410,7 +410,14 @@ def new_resource():
     if starts_from is not None:
         starts_from = validate_date_time(starts_from)
         if not starts_from:
-            return jsonify({"error": "starts from is invalid"}), 400
+            return (
+                jsonify(
+                    {
+                        "error": "starts_from is invalid. Expected Unix timestamp (integer)"
+                    }
+                ),
+                400,
+            )
     if not validate_interval(interval):
         return jsonify({"error": "interval is invalid"}), 400
     interval = get_interval(interval)
@@ -457,6 +464,11 @@ def new_resource():
 
     create_daemon_cron_job_for_resource(resource, cfg.server)
 
+    # Convert starts_from to Unix timestamp for response
+    starts_from_timestamp = (
+        int(resource.starts_from.timestamp()) if resource.starts_from else None
+    )
+
     return (
         jsonify(
             {
@@ -468,7 +480,7 @@ def new_resource():
                     "channels": channels,
                     "keywords": resource.keywords,
                     "interval": resource.interval,
-                    "starts_from": resource.starts_from,
+                    "starts_from": starts_from_timestamp,
                     "make_screenshot": resource.make_screenshot,
                     "enabled": resource.enabled,
                     "areas": resource.polygon,
@@ -492,6 +504,12 @@ def get_resource(resource_id: str):
     for channel in all_channels:
         if channel.enabled:
             active_channels.append(channel.channel_id)
+
+    # Convert starts_from to Unix timestamp for response
+    starts_from_timestamp = (
+        int(resource.starts_from.timestamp()) if resource.starts_from else None
+    )
+
     return (
         jsonify(
             {
@@ -503,7 +521,7 @@ def get_resource(resource_id: str):
                     "channels": active_channels,
                     "keywords": resource.keywords,
                     "interval": resource.interval,
-                    "starts_from": resource.starts_from,
+                    "starts_from": starts_from_timestamp,
                     "make_screenshot": resource.make_screenshot,
                     "enabled": resource.enabled,
                     "areas": resource.polygon,
@@ -546,8 +564,30 @@ def patch_resorce(resource_id: str):
             channel = get_channel_by_id(cfg.postgres, channel_id)
             if channel is None:
                 return jsonify({"error": f"channel {channel_id} not found"}), 404
+
+    # Handle starts_from in PATCH request
+    starts_from = body.get("starts_from")
+    if starts_from is not None:
+        starts_from = validate_date_time(starts_from)
+        if not starts_from:
+            return (
+                jsonify(
+                    {
+                        "error": "starts_from is invalid. Expected Unix timestamp (integer)"
+                    }
+                ),
+                400,
+            )
+
     update_resource(
-        cfg.postgres, resource_id, description, keywords, interval, enabled, polygon
+        cfg.postgres,
+        resource_id,
+        description,
+        keywords,
+        interval,
+        enabled,
+        polygon,
+        starts_from,
     )
     new_resource = get_resource_by_id(cfg.postgres, resource_id)
 
@@ -555,6 +595,11 @@ def patch_resorce(resource_id: str):
         update_resource_channels(cfg.postgres, resource_id, channels)
 
     update_daemon_cron_job_for_resource(new_resource, cfg.server)
+
+    # Convert starts_from to Unix timestamp for response
+    starts_from_timestamp = (
+        int(new_resource.starts_from.timestamp()) if new_resource.starts_from else None
+    )
 
     return (
         jsonify(
@@ -567,7 +612,7 @@ def patch_resorce(resource_id: str):
                     "channels": channels,
                     "keywords": new_resource.keywords,
                     "interval": new_resource.interval,
-                    "starts_from": new_resource.starts_from,
+                    "starts_from": starts_from_timestamp,
                     "make_screenshot": new_resource.make_screenshot,
                     "enabled": new_resource.enabled,
                     "areas": new_resource.polygon,
@@ -603,6 +648,12 @@ def all_resources():
         for channel in all_channels:
             if channel.enabled:
                 active_channels.append(channel.channel_id)
+
+        # Convert starts_from to Unix timestamp for response
+        starts_from_timestamp = (
+            int(resource.starts_from.timestamp()) if resource.starts_from else None
+        )
+
         result.append(
             {
                 "id": resource.id,
@@ -612,7 +663,7 @@ def all_resources():
                 "channels": active_channels,
                 "keywords": resource.keywords,
                 "interval": resource.interval,
-                "starts_from": resource.starts_from,
+                "starts_from": starts_from_timestamp,
                 "make_screenshot": resource.make_screenshot,
                 "enabled": resource.enabled,
                 "areas": resource.polygon,

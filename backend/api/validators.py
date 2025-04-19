@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
 
 
@@ -13,7 +13,9 @@ def validate_username(username: str) -> bool:
 def validate_email(email: str) -> bool:
     if len(email) < 5 or len(email) > 255:
         return False
-    pattern = re.compile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+    pattern = re.compile(
+        "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+    )
     return pattern.match(email)
 
 
@@ -25,7 +27,9 @@ def validate_password(password: str) -> bool:
 
 
 def validate_uuid(uuid: str) -> bool:
-    pattern = re.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+    pattern = re.compile(
+        "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    )
     return pattern.match(uuid)
 
 
@@ -54,7 +58,7 @@ def validate_keywords(keywords: List[str]) -> bool:
 def validate_interval(interval: Dict[str, str]) -> bool:
     if type(interval) != dict:
         return False
-    for data_type in ['minutes', 'hours', 'days', 'months', 'day_of_week']:
+    for data_type in ["minutes", "hours", "days", "months", "day_of_week"]:
         if data_type not in interval:
             return False
         if type(interval[data_type]) != str:
@@ -66,14 +70,14 @@ def validate_interval(interval: Dict[str, str]) -> bool:
             continue
         except:
             pass
-        if interval[data_type] == '*':
+        if interval[data_type] == "*":
             continue
-        parts = interval[data_type].split(' ')
+        parts = interval[data_type].split(" ")
         if len(parts) != 3:
             return False
-        if parts[0] != '*':
+        if parts[0] != "*":
             return False
-        if parts[1] != '/':
+        if parts[1] != "/":
             return False
         try:
             value = int(parts[2])
@@ -87,23 +91,29 @@ def validate_interval(interval: Dict[str, str]) -> bool:
 
 
 def get_interval(interval: Dict[str, str]) -> str:
-    return interval['minutes'].replace(' ', '') +\
-        ' ' + interval['hours'].replace(' ', '') +\
-        ' ' + interval['days'].replace(' ', '') +\
-        ' ' + interval['months'].replace(' ', '') +\
-        ' ' + interval['day_of_week'].replace(' ', '')
+    return (
+        interval["minutes"].replace(" ", "")
+        + " "
+        + interval["hours"].replace(" ", "")
+        + " "
+        + interval["days"].replace(" ", "")
+        + " "
+        + interval["months"].replace(" ", "")
+        + " "
+        + interval["day_of_week"].replace(" ", "")
+    )
 
 
 def validate_polygon(polygon: Dict[str, Any]) -> bool:
-    if 'sensitivity' not in polygon:
+    if "sensitivity" not in polygon:
         return False
     try:
-        sensitivity = float(polygon['sensitivity'])
+        sensitivity = float(polygon["sensitivity"])
         if sensitivity < 0 or sensitivity > 100:
             return False
     except:
         return False
-    for area_param in ['x', 'y', 'width', 'height']:
+    for area_param in ["x", "y", "width", "height"]:
         if area_param not in polygon:
             return False
         try:
@@ -116,15 +126,14 @@ def validate_polygon(polygon: Dict[str, Any]) -> bool:
 
 
 def validate_monitoring_event_status(status: str) -> bool:
-    return status in ['CREATED', 'NOTIFIED', 'WATCHED', 'REACTED']
+    return status in ["CREATED", "NOTIFIED", "WATCHED", "REACTED"]
 
 
-def validate_date_time(date_string: str) -> Optional[datetime]:
+def validate_date_time(date_input: Union[str, int]) -> Optional[datetime]:
     try:
-        date_part, time_part = date_string.split(" ")
-        year, month, day = map(int, date_part.split("-"))
-        hour, minute, second = map(int, time_part.split(":"))
-        date_object = datetime(year, month, day, hour, minute, second)
-        return date_object
+        if isinstance(date_input, int):
+            return datetime.fromtimestamp(date_input)
+        else:
+            return None
     except:
         return None
