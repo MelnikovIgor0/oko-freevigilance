@@ -300,6 +300,7 @@ def new_channel():
                     "type": channel.type,
                     "name": channel.name,
                     "enabled": channel.enabled,
+                    "params": channel.params,
                 }
             }
         ),
@@ -320,6 +321,7 @@ def find_all_channels():
                         "type": channel.type,
                         "name": channel.name,
                         "enabled": channel.enabled,
+                        "params": channel.params,
                     }
                     for channel in channels
                 ]
@@ -345,6 +347,7 @@ def get_channel(channel_id: str):
                     "enabled": channel.enabled,
                     "type": channel.type,
                     "name": channel.name,
+                    "params": channel.params,
                 }
             }
         ),

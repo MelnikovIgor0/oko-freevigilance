@@ -44,6 +44,7 @@ class ResourceMonitoringParams:
     polygon: Dict[str, Any]
     keywords: List[str]
     starts_from: Optional[datetime]
+    enabled: bool
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,7 +61,7 @@ def get_resource_params(cfg: PostgreConfig, resource_id: str) -> Optional[Resour
         password=cfg.password
     )
     cur = conn.cursor()
-    cur.execute("SELECT url, monitoring_polygon, key_words, starts_from FROM resources WHERE id = %s", (resource_id,))
+    cur.execute("SELECT url, monitoring_polygon, key_words, starts_from, enabled FROM resources WHERE id = %s", (resource_id,))
     result = cur.fetchone()
     if result is None:
         return None
@@ -69,7 +70,8 @@ def get_resource_params(cfg: PostgreConfig, resource_id: str) -> Optional[Resour
         url=result[0],
         polygon=result[1],
         keywords=result[2],
-        starts_from=result[3]
+        starts_from=result[3],
+        enabled=result[4],
     )
 
 
@@ -146,7 +148,14 @@ def get_changed_keywords(cfg: S3Config, html_path: str, prev_html_path: Optional
         prev_keywords = search_keywords(cfg, prev_html_path, keywords)
         result = dict()
         for keyword in keywords:
-            result[keyword] = current_keywords[keyword] - prev_keywords[keyword]
+            if keyword not in prev_keywords.keys() and keyword not in current_keywords.keys():
+                result[keyword] = 0
+            elif keyword not in current_keywords.keys():
+                result[keyword] = -prev_keywords[keyword]
+            elif keyword not in prev_keywords.keys():
+                result[keyword] = current_keywords[keyword]
+            else:
+                result[keyword] = current_keywords[keyword] - prev_keywords[keyword]
         return result
     return current_keywords
 
@@ -155,7 +164,7 @@ def get_keywords_events(cfg: S3Config, html_path: str, prev_html_path: Optional[
     events = []
     diff = get_changed_keywords(cfg, html_path, prev_html_path, keywords)
     for word, amount in diff.items():
-        if amount > 0:
+        if amount != 0:
             events.append(word)
     return events
 
@@ -220,15 +229,18 @@ def notify_by_all_channels(notification_config: NotificationConfig, channels_dat
     for channel_type, channel_params in channels_data:
         if channel_type == 'telegram':
             chat_id = channel_params['chat_id']
-            if isinstance(chat_id, str):
+            if isinstance(chat_id, int):
                 notified = notify_about_event_tg(notification_config.telegram_token, chat_id, event_id, message) or notified
             elif isinstance(chat_id, list):
                 for current_chat_id in chat_id:
                     notified = notify_about_event_tg(notification_config.telegram_token, current_chat_id, event_id, message) or notified
         elif channel_type == 'email':
+            emails = channel_params['email']
+            if isinstance(emails, str):
+                emails = [emails]
             notified = send_email(notification_config.email_from,
                                   notification_config.email_token,
-                                  channel_params['email'],
+                                  emails,
                                   message,
                                   f'обнаружено событие мониторинга: {event_id}') or notified
     return notified
@@ -314,6 +326,9 @@ def main():
         return
     if params.starts_from is not None and params.starts_from < datetime.now().utcnow():
         print('Resource is not active')
+        return
+    if not params.enabled:
+        print('Resource is not enabled')
         return
     print(params)
 
