@@ -41,6 +41,7 @@ import telebot
 class ResourceMonitoringParams:
     resource_id: str
     url: str
+    make_screenshot: bool
     polygon: Dict[str, Any]
     keywords: List[str]
     starts_from: Optional[datetime]
@@ -61,7 +62,7 @@ def get_resource_params(cfg: PostgreConfig, resource_id: str) -> Optional[Resour
         password=cfg.password
     )
     cur = conn.cursor()
-    cur.execute("SELECT url, monitoring_polygon, key_words, starts_from, enabled FROM resources WHERE id = %s", (resource_id,))
+    cur.execute("SELECT url, monitoring_polygon, key_words, starts_from, enabled, make_screenshot FROM resources WHERE id = %s", (resource_id,))
     result = cur.fetchone()
     if result is None:
         return None
@@ -72,6 +73,7 @@ def get_resource_params(cfg: PostgreConfig, resource_id: str) -> Optional[Resour
         keywords=result[2],
         starts_from=result[3],
         enabled=result[4],
+        make_screenshot=result[5]
     )
 
 
@@ -176,13 +178,18 @@ def pixels_are_different(pixels1: Tuple[int, int, int], pixels2: Tuple[int, int,
     return False
 
 
-def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_path: Optional[str], area: str) -> bool:
+def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_path: Optional[str], area: Dict[str, Any]) -> bool:
     if old_screenshot_path is None:
         return False
-    x = int(area[0]['x'])
-    y = int(area[0]['y'])
-    width = int(area[0]['width'])
-    height = int(area[0]['height'])
+    x = 0
+    y = 0
+    width = 10 ** 9
+    height = 10 ** 9
+    if area is not None and 'x' in area[0].keys():
+        x = int(area[0]['x'])
+        y = int(area[0]['y'])
+        width = int(area[0]['width'])
+        height = int(area[0]['height'])
     sensitivity = float(area[0]['sensitivity'])
     changed_count = 0
     img1 = get_image(cfg, 'images', screenshot_path)
@@ -338,7 +345,7 @@ def main():
         html_path = params.resource_id + '_' + str(snapshot_id + 1) + '.html'
         if snapshot_id > 0:
             html_prev_path = params.resource_id + '_' + str(snapshot_id) + '.html'
-    if params.polygon is not None and len(params.polygon) > 0:
+    if params.make_screenshot:
         screenshot_path = params.resource_id + '_' + str(snapshot_id + 1) + '.png'
         if snapshot_id > 0:
             screenshot_prev_path = params.resource_id + '_' + str(snapshot_id) + '.png'
@@ -348,7 +355,7 @@ def main():
     if params.keywords:
         keyword_events = get_keywords_events(cfg.s3, html_path, html_prev_path, params.keywords)
     screenshot_changed = False
-    if params.polygon:
+    if params.make_screenshot:
         screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, params.polygon)
     print('detected keywords:')
     print(keyword_events)
