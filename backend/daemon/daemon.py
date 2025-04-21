@@ -235,11 +235,14 @@ def notify_by_all_channels(notification_config: NotificationConfig, channels_dat
     for channel_type, channel_params in channels_data:
         if channel_type == 'telegram':
             chat_id = channel_params['chat_id']
+            if isinstance(chat_id, str):
+                chat_id = int(chat_id)
             if isinstance(chat_id, int):
                 notified = notify_about_event_tg(notification_config.telegram_token, chat_id, event_id, message) or notified
             elif isinstance(chat_id, list):
                 for current_chat_id in chat_id:
-                    notified = notify_about_event_tg(notification_config.telegram_token, current_chat_id, event_id, message) or notified
+                    current_chat = int(current_chat_id)
+                    notified = notify_about_event_tg(notification_config.telegram_token, current_chat, event_id, message) or notified
         elif channel_type == 'email':
             emails = channel_params['email']
             if isinstance(emails, str):
