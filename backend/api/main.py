@@ -575,6 +575,8 @@ def patch_resorce(resource_id: str):
     polygon = body.get("areas")
     if polygon is not None and not validate_polygon(polygon):
         return jsonify({"error": "polygon is invalid"}), 400
+    if polygon is None:
+        polygon = resource.polygon
     channels = body.get("channels")
     if channels is not None:
         for channel_id in channels:
@@ -583,6 +585,14 @@ def patch_resorce(resource_id: str):
             channel = get_channel_by_id(cfg.postgres, channel_id)
             if channel is None:
                 return jsonify({"error": f"channel {channel_id} not found"}), 404
+    
+    sensitivity = body.get("sensitivity")
+    if polygon is None and sensitivity is not None:
+        return jsonify({"error": "sensitivity and polygon are mutually exclusive"}), 400
+    if sensitivity is not None:
+        if not isinstance(sensitivity, float) or (sensitivity < 0 or sensitivity > 100):
+            return jsonify({"error": "sensitivity is invalid"}), 400
+        polygon['sensitivity'] = sensitivity
 
     # Handle starts_from in PATCH request
     starts_from = body.get("starts_from")
