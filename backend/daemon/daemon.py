@@ -178,19 +178,21 @@ def pixels_are_different(pixels1: Tuple[int, int, int], pixels2: Tuple[int, int,
     return False
 
 
-def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_path: Optional[str], area: Dict[str, Any]) -> bool:
+def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_path: Optional[str], area: List[Dict[str, Any]]) -> bool:
     if old_screenshot_path is None:
         return False
     x = 0
     y = 0
     width = 10 ** 9
     height = 10 ** 9
-    if area is not None and 'x' in area[0].keys():
+    if isinstance(area, list) and area is not None and 'x' in area[0].keys():
         x = int(area[0]['x'])
         y = int(area[0]['y'])
         width = int(area[0]['width'])
         height = int(area[0]['height'])
-    sensitivity = float(area[0]['sensitivity'])
+        sensitivity = float(area[0]['sensitivity'])
+    else:
+        sensitivity = float(area['sensitivity'])
     changed_count = 0
     img1 = get_image(cfg, 'images', screenshot_path)
     img2 = get_image(cfg, 'images', old_screenshot_path)

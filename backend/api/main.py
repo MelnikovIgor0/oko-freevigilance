@@ -458,8 +458,8 @@ def new_resource():
                     area["sensitivity"] = sensitivity
                     if not validate_polygon(area):
                         return jsonify({"error": "polygon is invalid"}), 400
-            else:
-                polygon = {"sensitivity": sensitivity}
+        else:
+            polygon = {"sensitivity": sensitivity}
     channels = body.get("channels")
     if channels is None:
         return jsonify({"error": "at least one channel should be specified"}), 400
