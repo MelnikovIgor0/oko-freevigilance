@@ -418,9 +418,7 @@ def new_resource():
     if not validate_description(description):
         return jsonify({"error": "description is invalid"}), 400
     keywords = body.get("keywords")
-    if not keywords:
-        return jsonify({"error": "keywords are missing"}), 400
-    if not validate_keywords(keywords):
+    if keywords is not None and not validate_keywords(keywords):
         return jsonify({"error": "keywords are invalid"}), 400
     interval = body.get("interval")
     if not interval:
