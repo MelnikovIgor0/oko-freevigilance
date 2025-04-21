@@ -333,7 +333,7 @@ def main():
     if params is None:
         print('Resource not found')
         return
-    if params.starts_from is not None and params.starts_from < datetime.now().utcnow():
+    if params.starts_from is not None and params.starts_from > datetime.now().utcnow():
         print('Resource is not active')
         return
     if not params.enabled:
