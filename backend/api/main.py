@@ -88,6 +88,7 @@ class JsonFormatter(logging.Formatter):
             "request_id": getattr(record, "request_id", ""),
             "path": getattr(record, "path", ""),
             "method": getattr(record, "method", ""),
+            "user": getattr(record, "user", ""),
         }
         return json.dumps(log_record)
 
@@ -110,11 +111,23 @@ def before_request():
 
 @app.after_request
 def after_request(response):
+    email = "unauthorized"
+    bearer = request.headers.get("Authorization")
+    if bearer is not None:
+        data = bearer.split()
+        if len(data) == 2:
+            token = bearer.split()[1]
+            if token:
+                try:
+                    email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
+                except Exception as error:
+                    pass
     log_data = {
         "request_id": getattr(request, "request_id", ""),
         "path": request.path,
         "method": request.method,
         "status": response.status_code,
+        "user": email
     }
     logger.info(
         f"Request processed: {request.method} {request.path} - {response.status_code}",
@@ -133,9 +146,12 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         bearer = request.headers.get("Authorization")
-        if not bearer:
+        if bearer is None:
             return jsonify({"error": "token is missing"}), 403
-        token = bearer.split()[1]
+        data = bearer.split()
+        if len(data) < 2:
+            return jsonify({"error": "invalid auth token"}), 403
+        token = data[1]
         if not token:
             return jsonify({"error": "token is missing"}), 403
         try:

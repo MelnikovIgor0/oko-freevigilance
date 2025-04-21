@@ -26,12 +26,14 @@ scrape_configs:
             request_id: request_id
             path: path
             method: method
+            user: user
       - labels:
           level:
           module:
           request_id:
           path:
           method:
+          user:
       - timestamp:
           format: Unix
           source: timestamp
