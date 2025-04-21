@@ -24,4 +24,17 @@ docker system prune -af
 echo "🏗️ Building and starting new containers..."
 docker compose up -d --build
 
-echo "✅ Deployment completed successfully!"
+# Wait for services to be healthy
+echo "⏳ Waiting for services to be ready..."
+sleep 30
+
+# Starting service cron
+echo "Starting service cron..."
+CONTAINER_ID=$(docker ps --filter "name=api" --format "{{.ID}}")
+docker exec $CONTAINER_ID service cron start
+
+# Check if services are running
+echo "🔍 Checking service status..."
+docker compose ps
+
+echo "✅ Deployment completed successfully!" 
