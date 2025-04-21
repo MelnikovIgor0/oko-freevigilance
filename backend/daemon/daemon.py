@@ -124,7 +124,7 @@ def extract_text_from_html(cfg: S3Config, html_path: str):
 
 def extract_words(raw_html_text: str):
     words = re.findall(r'\b\w+\b', raw_html_text)
-    return words
+    return [word.lower() for word in words]
 
 
 def search_keywords(cfg: S3Config, html_path: str, keywords: List[str]) -> List[str]:
@@ -133,7 +133,7 @@ def search_keywords(cfg: S3Config, html_path: str, keywords: List[str]) -> List[
     found = dict()
     # вначале надо устанавливать пакет для русских слов: pip install -U pymorphy2-dicts-ru
     morph = pymorphy2.MorphAnalyzer(lang='ru')
-    keywords_root = [morph.parse(keyword)[0].normal_form for keyword in keywords]
+    keywords_root = [morph.parse(keyword.lower())[0].normal_form for keyword in keywords]
     words_root = [morph.parse(word)[0].normal_form for word in words]
     for keyword in keywords_root:
         amount = 0
