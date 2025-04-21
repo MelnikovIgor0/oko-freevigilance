@@ -183,8 +183,7 @@ def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_pa
     y = int(area[0]['y'])
     width = int(area[0]['width'])
     height = int(area[0]['height'])
-    sensitivity = int(area[0]['sensitivity'])
-    total_size = width * height
+    sensitivity = float(area[0]['sensitivity'])
     changed_count = 0
     img1 = get_image(cfg, 'images', screenshot_path)
     img2 = get_image(cfg, 'images', old_screenshot_path)
@@ -192,17 +191,15 @@ def get_screenshot_events(cfg: S3Config, screenshot_path: str, old_screenshot_pa
     pixels2 = img2.load()
     if x < 0 or y < 0:
         return False
-    out_of_img1 = (x + width > img1.size[0]) or (y + height > img1.size[1])
-    out_of_img2 = (x + width > img2.size[0]) or (y + height > img2.size[1])
-    if out_of_img1 and out_of_img2:
-        return False
-    if out_of_img1 or out_of_img2:
-        return True
+    width = min(img1.size[0] - x, img2.size[0] - x)
+    height = min(img1.size[1] - y, img2.size[1] - y)
+    total_size = width * height
     for i in range(x, x + width):
         for j in range(y, y + height):
             if pixels_are_different(pixels1[i, j], pixels2[i, j]):
                 changed_count += 1
-    return changed_count * sensitivity / 100 >= total_size
+    print(f"screenshot diff: {changed_count}/{total_size} pixels")
+    return changed_count >= total_size * (sensitivity / 100)
 
 
 def get_connection(cfg: PostgreConfig):
@@ -353,8 +350,9 @@ def main():
     screenshot_changed = False
     if params.polygon:
         screenshot_changed = get_screenshot_events(cfg.s3, screenshot_path, screenshot_prev_path, params.polygon)
+    print('detected keywords:')
     print(keyword_events)
-    print(screenshot_changed)
+    print('screenshot changed:', screenshot_changed)
     save_monitoring_events(cfg.postgres, cfg.notification, params.resource_id, params.resource_id + '_' + str(snapshot_id + 1), keyword_events, screenshot_changed)
 
 
