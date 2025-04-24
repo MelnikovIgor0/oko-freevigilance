@@ -3,15 +3,15 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from flask import Flask
-from backend.api.main import app, get_user_by_email, cfg, jwt
+from api.main import app, get_user_by_email, cfg, jwt
 
 class TestInfoEndpoint(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
         self.app.testing = True
         
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
     def test_info_success(self, mock_jwt_decode, mock_get_user):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -63,7 +63,7 @@ class TestInfoEndpoint(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is missing")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_info_invalid_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = Exception("Invalid token")
         
@@ -76,8 +76,8 @@ class TestInfoEndpoint(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_info_user_not_found(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "nonexistent@example.com"}
         mock_get_user.return_value = None
@@ -92,7 +92,7 @@ class TestInfoEndpoint(unittest.TestCase):
         self.assertEqual(data["error"], "user nonexistent@example.com not found")
         mock_get_user.assert_called_once_with(cfg.postgres, "nonexistent@example.com")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_info_expired_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = jwt.ExpiredSignatureError("Token expired")
         
@@ -105,7 +105,7 @@ class TestInfoEndpoint(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_info_invalid_signature(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = jwt.InvalidSignatureError("Invalid signature")
         

@@ -5,40 +5,40 @@ from flask import (
 )
 from flask import jsonify
 from flask_cors import CORS
-from backend.api.config.config import parse_config
-from backend.api.model.channel_resource import (
+from api.config.config import parse_config
+from api.model.channel_resource import (
     create_channel_resource,
     get_channel_resource_by_resource_id,
     change_channel_resource_enabled,
     update_resource_channels,
 )
-from backend.api.model.channel import (
+from api.model.channel import (
     create_channel,
     get_channel_by_id,
     update_channel,
     get_all_channels,
     get_channel_by_name,
 )
-from backend.api.model.monitoring_event import (
+from api.model.monitoring_event import (
     get_monitoring_event_by_id,
     update_monitoring_event_status,
     filter_monitoring_events,
     filter_monitoring_events_for_report,
 )
-from backend.api.model.resource import (
+from api.model.resource import (
     create_resource,
     get_resource_by_id,
     update_resource,
     get_all_resources,
 )
-from backend.api.model.user import (
+from api.model.user import (
     create_user,
     get_user_by_id,
     get_user_by_email,
     get_user_by_username,
     get_md5,
 )
-from backend.api.validators import (
+from api.validators import (
     validate_username,
     validate_email,
     validate_password,
@@ -63,12 +63,12 @@ import time
 import base64
 import logging
 import uuid
-from backend.api.model.s3_interactor import (
+from api.model.s3_interactor import (
     get_object,
     get_object_created_at
 )
-from backend.api.util.html_parser import extract_text_from_html
-from backend.api.util.utility import (
+from api.util.html_parser import extract_text_from_html
+from api.util.utility import (
     create_daemon_cron_job_for_resource,
     update_daemon_cron_job_for_resource,
     get_last_snapshot_id,

@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import NoCredentialsError
-from backend.api.config.config import S3Config
+from api.config.config import S3Config
 from typing import Any
 from io import BytesIO
 from PIL import Image

@@ -3,18 +3,18 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from flask import Flask
-from backend.api.main import app, validate_username, validate_email, validate_password, get_user_by_username, create_user
+from api.main import app, validate_username, validate_email, validate_password, get_user_by_username, create_user
 
 class TestRegisterEndpoint(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
         self.app.testing = True
         
-    @patch('backend.api.main.validate_username')
-    @patch('backend.api.main.validate_email')
-    @patch('backend.api.main.validate_password')
-    @patch('backend.api.main.get_user_by_username')
-    @patch('backend.api.main.create_user')
+    @patch('api.main.validate_username')
+    @patch('api.main.validate_email')
+    @patch('api.main.validate_password')
+    @patch('api.main.get_user_by_username')
+    @patch('api.main.create_user')
     def test_register_success(self, mock_create_user, mock_get_user, mock_validate_password, 
                               mock_validate_email, mock_validate_username):
         mock_validate_username.return_value = True
@@ -92,7 +92,7 @@ class TestRegisterEndpoint(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "password is missing")
     
-    @patch('backend.api.main.validate_username')
+    @patch('api.main.validate_username')
     def test_register_invalid_username(self, mock_validate_username):
         mock_validate_username.return_value = False
         
@@ -111,8 +111,8 @@ class TestRegisterEndpoint(unittest.TestCase):
         self.assertEqual(data["error"], "username is invalid")
         mock_validate_username.assert_called_once_with("invalid!user")
     
-    @patch('backend.api.main.validate_username')
-    @patch('backend.api.main.validate_email')
+    @patch('api.main.validate_username')
+    @patch('api.main.validate_email')
     def test_register_invalid_email(self, mock_validate_email, mock_validate_username):
         mock_validate_username.return_value = True
         mock_validate_email.return_value = False
@@ -132,9 +132,9 @@ class TestRegisterEndpoint(unittest.TestCase):
         self.assertEqual(data["error"], "email is invalid")
         mock_validate_email.assert_called_once_with("invalid_email")
     
-    @patch('backend.api.main.validate_username')
-    @patch('backend.api.main.validate_email')
-    @patch('backend.api.main.validate_password')
+    @patch('api.main.validate_username')
+    @patch('api.main.validate_email')
+    @patch('api.main.validate_password')
     def test_register_invalid_password(self, mock_validate_password, 
                                      mock_validate_email, mock_validate_username):
         mock_validate_username.return_value = True
@@ -156,10 +156,10 @@ class TestRegisterEndpoint(unittest.TestCase):
         self.assertEqual(data["error"], "password is invalid")
         mock_validate_password.assert_called_once_with("weak")
     
-    @patch('backend.api.main.validate_username')
-    @patch('backend.api.main.validate_email')
-    @patch('backend.api.main.validate_password')
-    @patch('backend.api.main.get_user_by_username')
+    @patch('api.main.validate_username')
+    @patch('api.main.validate_email')
+    @patch('api.main.validate_password')
+    @patch('api.main.get_user_by_username')
     def test_register_user_already_exists(self, mock_get_user, mock_validate_password, 
                                        mock_validate_email, mock_validate_username):
         mock_validate_username.return_value = True

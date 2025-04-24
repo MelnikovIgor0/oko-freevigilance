@@ -5,16 +5,16 @@ from unittest.mock import patch, MagicMock
 
 import jwt
 from flask import Flask
-from backend.api.main import app, get_user_by_email, get_md5, cfg
+from api.main import app, get_user_by_email, get_md5, cfg
 
 class TestLoginEndpoint(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
         self.app.testing = True
         
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.get_md5')
-    @patch('backend.api.main.jwt.encode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_md5')
+    @patch('api.main.jwt.encode')
     def test_login_success(self, mock_jwt_encode, mock_get_md5, mock_get_user):
         mock_user = MagicMock()
         mock_user.id = 1
@@ -90,7 +90,7 @@ class TestLoginEndpoint(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "Invalid credentials 1")
     
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.get_user_by_email')
     def test_login_user_not_found(self, mock_get_user):
         mock_get_user.return_value = None
         
@@ -108,8 +108,8 @@ class TestLoginEndpoint(unittest.TestCase):
         self.assertEqual(data["error"], "Invalid credentials 2")
         mock_get_user.assert_called_once_with(cfg.postgres, "nonexistent@example.com")
     
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.get_md5')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_md5')
     def test_login_incorrect_password(self, mock_get_md5, mock_get_user):
         mock_user = MagicMock()
         mock_user.password = "correct_hash"
@@ -132,10 +132,10 @@ class TestLoginEndpoint(unittest.TestCase):
         mock_get_user.assert_called_once_with(cfg.postgres, "test@example.com")
         mock_get_md5.assert_called_once_with("wrong_password")
     
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.get_md5')
-    @patch('backend.api.main.jwt.encode')
-    @patch('backend.api.main.datetime')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_md5')
+    @patch('api.main.jwt.encode')
+    @patch('api.main.datetime')
     def test_login_jwt_token_expiration(self, mock_datetime, mock_jwt_encode, mock_get_md5, mock_get_user):
         mock_user = MagicMock()
         mock_user.id = 1

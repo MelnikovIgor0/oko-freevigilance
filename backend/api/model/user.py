@@ -1,4 +1,4 @@
-from backend.api.config.config import PostgreConfig
+from api.config.config import PostgreConfig
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib

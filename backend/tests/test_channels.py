@@ -2,18 +2,18 @@ import json
 import unittest
 from unittest.mock import patch, MagicMock
 
-from backend.api.main import app, cfg
+from api.main import app, cfg
 
 class TestChannelEndpoints(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
         self.app.testing = True
         
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
-    @patch('backend.api.main.create_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
+    @patch('api.main.create_channel')
     def test_new_channel_success(self, mock_create_channel, mock_get_channel, mock_validate_name, 
                                 mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -93,8 +93,8 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "invalid auth token")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_new_channel_missing_name(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
@@ -114,9 +114,9 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "name is missing")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
     def test_new_channel_invalid_name(self, mock_validate_name, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
@@ -140,10 +140,10 @@ class TestChannelEndpoints(unittest.TestCase):
         self.assertEqual(data["error"], "name is invalid")
         mock_validate_name.assert_called_once_with("invalid@name")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
     def test_new_channel_already_exists(self, mock_get_channel, mock_validate_name, 
                                       mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -169,10 +169,10 @@ class TestChannelEndpoints(unittest.TestCase):
         self.assertEqual(data["error"], "channel already exists")
         mock_get_channel.assert_called_once_with(cfg.postgres, "existing_channel")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
     def test_new_channel_missing_type(self, mock_get_channel, mock_validate_name, 
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -196,10 +196,10 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "type is missing")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
     def test_new_channel_invalid_type(self, mock_get_channel, mock_validate_name, 
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -224,10 +224,10 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "type is invalid")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
     def test_new_channel_missing_params(self, mock_get_channel, mock_validate_name, 
                                        mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -251,10 +251,10 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "params are missing")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_name')
-    @patch('backend.api.main.get_channel_by_name')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_name')
+    @patch('api.main.get_channel_by_name')
     def test_new_channel_empty_params(self, mock_get_channel, mock_validate_name, 
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -279,9 +279,9 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "params are missing")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.get_all_channels')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_all_channels')
     def test_find_all_channels_success(self, mock_get_all_channels, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -329,9 +329,9 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_get_all_channels.assert_called_once_with(cfg.postgres)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.get_all_channels')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_all_channels')
     def test_find_all_channels_empty(self, mock_get_all_channels, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -371,7 +371,7 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "invalid auth token")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_invalid_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = Exception("Invalid token")
         
@@ -384,8 +384,8 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_user_not_found(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "nonexistent@example.com"}
         mock_get_user.return_value = None
@@ -399,10 +399,10 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "user nonexistent@example.com not found")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
     def test_get_channel_success(self, mock_get_channel_by_id, mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -439,9 +439,9 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_validate_uuid.assert_called_once_with(channel_id)
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
     def test_get_channel_invalid_id(self, mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -463,10 +463,10 @@ class TestChannelEndpoints(unittest.TestCase):
         self.assertEqual(data["error"], "channel_id is invalid")
         mock_validate_uuid.assert_called_once_with(channel_id)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
     def test_get_channel_not_found(self, mock_get_channel_by_id, mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -513,7 +513,7 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "invalid auth token")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_invalid_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = Exception("Invalid token")
         
@@ -528,8 +528,8 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_user_not_found(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "nonexistent@example.com"}
         mock_get_user.return_value = None
@@ -545,11 +545,11 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "user nonexistent@example.com not found")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
-    @patch('backend.api.main.update_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.update_channel')
     def test_patch_channel_success_full_update(self, mock_update_channel, mock_get_channel_by_id, 
                                        mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -587,11 +587,11 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
         mock_update_channel.assert_called_once_with(cfg.postgres, channel_id, new_params, new_enabled)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
-    @patch('backend.api.main.update_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.update_channel')
     def test_patch_channel_success_params_only(self, mock_update_channel, mock_get_channel_by_id, 
                                       mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -627,11 +627,11 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
         mock_update_channel.assert_called_once_with(cfg.postgres, channel_id, new_params, None)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
-    @patch('backend.api.main.update_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.update_channel')
     def test_patch_channel_success_enabled_only(self, mock_update_channel, mock_get_channel_by_id, 
                                        mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -667,11 +667,11 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
         mock_update_channel.assert_called_once_with(cfg.postgres, channel_id, None, new_enabled)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
-    @patch('backend.api.main.update_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.update_channel')
     def test_patch_channel_success_empty_update(self, mock_update_channel, mock_get_channel_by_id, 
                                        mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -703,9 +703,9 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
         mock_update_channel.assert_called_once_with(cfg.postgres, channel_id, None, None)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
     def test_patch_channel_invalid_id(self, mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -732,10 +732,10 @@ class TestChannelEndpoints(unittest.TestCase):
         self.assertEqual(data["error"], "channel_id is invalid")
         mock_validate_uuid.assert_called_once_with(channel_id)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
     def test_patch_channel_not_found(self, mock_get_channel_by_id, mock_validate_uuid, 
                                   mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -800,7 +800,7 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "invalid auth token")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_invalid_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = Exception("Invalid token")
         
@@ -820,8 +820,8 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_user_not_found(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "nonexistent@example.com"}
         mock_get_user.return_value = None
@@ -842,11 +842,11 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "user nonexistent@example.com not found")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
-    @patch('backend.api.main.update_channel')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.update_channel')
     def test_delete_channel_success(self, mock_update_channel, mock_get_channel_by_id, 
                                  mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -876,9 +876,9 @@ class TestChannelEndpoints(unittest.TestCase):
         mock_get_channel_by_id.assert_called_once_with(cfg.postgres, channel_id)
         mock_update_channel.assert_called_once_with(cfg.postgres, channel_id, None, False)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
     def test_delete_channel_invalid_id(self, mock_validate_uuid, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         
@@ -901,10 +901,10 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_validate_uuid.assert_called_once_with(channel_id)
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
-    @patch('backend.api.main.validate_uuid')
-    @patch('backend.api.main.get_channel_by_id')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_channel_by_id')
     def test_delete_channel_not_found(self, mock_get_channel_by_id, mock_validate_uuid, 
                                    mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
@@ -952,7 +952,7 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "invalid auth token")
     
-    @patch('backend.api.main.jwt.decode')
+    @patch('api.main.jwt.decode')
     def test_invalid_token(self, mock_jwt_decode):
         mock_jwt_decode.side_effect = Exception("Invalid token")
         
@@ -967,8 +967,8 @@ class TestChannelEndpoints(unittest.TestCase):
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "token is invalid/expired")
     
-    @patch('backend.api.main.jwt.decode')
-    @patch('backend.api.main.get_user_by_email')
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
     def test_user_not_found(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "nonexistent@example.com"}
         mock_get_user.return_value = None
