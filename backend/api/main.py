@@ -1,4 +1,8 @@
-from flask import Flask, request, Response
+from flask import (
+    Flask,
+    request,
+    Response
+)
 from flask import jsonify
 from flask_cors import CORS
 from config.config import parse_config
@@ -59,7 +63,10 @@ import time
 import base64
 import logging
 import uuid
-from model.s3_interactor import get_object, get_object_created_at
+from model.s3_interactor import (
+    get_object,
+    get_object_created_at
+)
 from util.html_parser import extract_text_from_html
 from util.utility import (
     create_daemon_cron_job_for_resource,
