@@ -1,4 +1,4 @@
-from config.config import PostgreConfig
+from backend.api.config.config import PostgreConfig
 from dataclasses import dataclass
 import datetime
 import json

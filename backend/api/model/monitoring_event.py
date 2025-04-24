@@ -1,4 +1,4 @@
-from config.config import PostgreConfig
+from backend.api.config.config import PostgreConfig
 from dataclasses import dataclass
 import psycopg2
 from typing import Optional, Any, Dict, List
