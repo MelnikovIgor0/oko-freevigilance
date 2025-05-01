@@ -15,7 +15,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - microservice-network
+      - backend-network
 
   master:
     image: chrislusf/seaweedfs
@@ -26,7 +26,7 @@ services:
       - "9324:9324"
     command: "master -ip=master -ip.bind=0.0.0.0 -metricsPort=9324"
     networks:
-      - microservice-network
+      - backend-network
 
   volume:
     image: chrislusf/seaweedfs
@@ -41,7 +41,7 @@ services:
     volumes:
       - seaweedfs_volume_data:/data
     networks:
-      - microservice-network
+      - backend-network
 
   filer:
     image: chrislusf/seaweedfs
@@ -59,7 +59,7 @@ services:
       - master
       - volume
     networks:
-      - microservice-network
+      - backend-network
 
   s3:
     image: chrislusf/seaweedfs
@@ -78,7 +78,7 @@ services:
       - volume
       - filer
     networks:
-      - microservice-network
+      - backend-network
   
   promtail:
     image: grafana/promtail:2.7.0
@@ -88,7 +88,7 @@ services:
       - app_logs:/var/log/microservice:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
-      - microservice-network
+      - backend-network
     depends_on:
       - loki
     restart: unless-stopped
@@ -103,7 +103,7 @@ services:
       - loki_data:/tmp/loki
     command: -config.file=/etc/loki/config.yml
     networks:
-      - microservice-network
+      - backend-network
     restart: unless-stopped
 
   grafana:
@@ -118,7 +118,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
-      - microservice-network
+      - backend-network
     depends_on:
       - loki
     restart: unless-stopped
@@ -142,7 +142,7 @@ services:
       - loki
       - promtail
     networks:
-      - microservice-network
+      - backend-network
 
   bot:
     build:
@@ -158,7 +158,7 @@ services:
       - loki
       - promtail
     networks:
-      - microservice-network
+      - backend-network
 
 volumes:
   app_logs:
@@ -171,5 +171,5 @@ volumes:
   seaweedfs_s3_data:
 
 networks:
-  microservice-network:
+  backend-network:
     driver: bridge
