@@ -1073,4 +1073,4 @@ def get_all_events():
 
 
 if __name__ == "__main__":
-    app.run(host=cfg.server.host, port=cfg.server.port, debug=cfg.server.debug)
+    app.run(host=cfg.server.host, port=cfg.server.app_port, debug=cfg.server.debug)

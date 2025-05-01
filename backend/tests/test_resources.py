@@ -399,7 +399,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         
         payload = self.valid_payload.copy()
 
-        payload['starts_from'] ='invalid_timestamp'
+        payload['starts_from'] = 'invalid_timestamp'
 
         response = self.app.post(
             '/resources/create',

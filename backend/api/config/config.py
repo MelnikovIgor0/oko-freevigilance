@@ -22,7 +22,8 @@ class S3Config:
 @dataclass
 class ServerConfig:
     host: str
-    port: str
+    app_port: str
+    admin_panel_port: str
     secret_key: str
     daemon_path: str
     venv_path: str
