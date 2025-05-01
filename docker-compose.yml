@@ -1,3 +1,4 @@
+
 version: "3.8"
 
 services:
@@ -37,6 +38,8 @@ services:
     command: 'volume -mserver="master:9333" -ip.bind=0.0.0.0 -port=8080 -metricsPort=9325'
     depends_on:
       - master
+    volumes:
+      - seaweedfs_volume_data:/data
     networks:
       - microservice-network
 
@@ -50,6 +53,8 @@ services:
     command: 'filer -master="master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
     tty: true
     stdin_open: true
+    volumes:
+      - seaweedfs_filer_data:/data
     depends_on:
       - master
       - volume
@@ -66,6 +71,8 @@ services:
       AWS_ACCESS_KEY_ID: "s3"
       AWS_SECRET_ACCESS_KEY: "pass1234"
     command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327'
+    volumes:
+      - seaweedfs_s3_data:/data
     depends_on:
       - master
       - volume
@@ -159,6 +166,9 @@ volumes:
   grafana_data:
   loki_data:
   postgres_data:
+  seaweedfs_volume_data:
+  seaweedfs_filer_data:
+  seaweedfs_s3_data:
 
 networks:
   microservice-network:
