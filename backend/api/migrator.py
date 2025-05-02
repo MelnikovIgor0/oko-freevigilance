@@ -4,6 +4,7 @@ import psycopg2
 import boto3
 from botocore.exceptions import NoCredentialsError
 from config.config import parse_config
+from api.model.user import create_user, get_user_by_email
 
 def migrate(cfg: PostgreConfig) -> None:
     conn = psycopg2.connect(
@@ -20,6 +21,8 @@ def migrate(cfg: PostgreConfig) -> None:
     conn.commit()
     cur.close()
     conn.close()
+    if not get_user_by_email(cfg, 'admin@admin.com'):
+        create_user(cfg, 'admin', 'admin', 'admin@admin.com', True)
 
 
 def init_s3_buckets(cfg: S3Config) -> None:
@@ -29,8 +32,10 @@ def init_s3_buckets(cfg: S3Config) -> None:
         aws_access_key_id=cfg.aws_access_key_id,
         aws_secret_access_key=cfg.aws_secret_access_key,
     )
-    s3.create_bucket(Bucket='images')
-    s3.create_bucket(Bucket='htmls')
+    bucket_names = [bucket['Name'] for bucket in s3.list_buckets()['Buckets']]
+    for bucket_name in ['images', 'htmls']:
+        if bucket_name not in bucket_names:
+            s3.create_bucket(Bucket=bucket_name)
 
 
 def main():

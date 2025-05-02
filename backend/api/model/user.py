@@ -12,7 +12,8 @@ class User:
     username: str
     password: str
     email: str
-    deleted_at: Optional[datetime]
+    deleted_at: Optional[datetime] = None
+    is_admin: bool = False
 
 def get_connection(cfg: PostgreConfig):
     return psycopg2.connect(
@@ -26,13 +27,13 @@ def get_connection(cfg: PostgreConfig):
 def get_md5(password: str) -> str:
     return hashlib.md5(password.encode()).hexdigest()
 
-def create_user(cfg: PostgreConfig, name: str, password: str, email: str) -> User:
+def create_user(cfg: PostgreConfig, name: str, password: str, email: str, is_admin: bool = False) -> User:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "INSERT INTO users (id, name, password, email, deleted_at) VALUES (%s, %s, %s, %s, NULL);"
+    query = "INSERT INTO users (id, name, password, email, deleted_at, is_admin) VALUES (%s, %s, %s, %s, NULL, %s);"
     new_uid = str(uuid.uuid4())
     password_hash = get_md5(password)
-    cur.execute(query, (new_uid, name, password_hash, email))
+    cur.execute(query, (new_uid, name, password_hash, email, is_admin))
     conn.commit()
     cur.close()
     conn.close()
@@ -42,12 +43,13 @@ def create_user(cfg: PostgreConfig, name: str, password: str, email: str) -> Use
         password=password_hash,
         email=email,
         deleted_at=None,
+        is_admin=is_admin,
     )
 
 def get_user_by_id(cfg: PostgreConfig, id: str) -> Optional[User]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT name, password, email, deleted_at FROM users WHERE id = %s"
+    query = "SELECT name, password, email, deleted_at, is_admin FROM users WHERE id = %s"
     cur.execute(query, (id,))
     row = cur.fetchone()
     if row is None:
@@ -58,12 +60,13 @@ def get_user_by_id(cfg: PostgreConfig, id: str) -> Optional[User]:
         password=row[1],
         email=row[2],
         deleted_at=row[3],
+        is_admin=row[4],
     )
 
 def get_user_by_username(cfg: PostgreConfig, name: str) -> Optional[User]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, password, email, deleted_at FROM users WHERE name = %s"
+    query = "SELECT id, password, email, deleted_at, is_admin FROM users WHERE name = %s"
     cur.execute(query, (name,))
     row = cur.fetchone()
     cur.close()
@@ -76,12 +79,13 @@ def get_user_by_username(cfg: PostgreConfig, name: str) -> Optional[User]:
         password=row[1],
         email=row[2],
         deleted_at=row[3],
+        is_admin=row[4],
     )
 
 def get_user_by_email(cfg: PostgreConfig, email: str) -> Optional[User]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, name, password, deleted_at FROM users WHERE email = %s"
+    query = "SELECT id, name, password, deleted_at, is_admin FROM users WHERE email = %s"
     cur.execute(query, (email,))
     row = cur.fetchone()
     if row is None:
@@ -92,4 +96,5 @@ def get_user_by_email(cfg: PostgreConfig, email: str) -> Optional[User]:
         password=row[2],
         email=email,
         deleted_at=row[3],
+        is_admin=row[4],
     )

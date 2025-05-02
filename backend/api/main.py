@@ -327,6 +327,7 @@ def login():
                     "username": user.username,
                     "email": user.email,
                     "deleted_at": user.deleted_at,
+                    "is_admin": user.is_admin,
                 },
             }
         ),
@@ -359,6 +360,7 @@ def info():
                 "username": user.username,
                 "id": user.id,
                 "deleted_at": user.deleted_at,
+                "is_admin": user.is_admin,
             }
         }
     )
