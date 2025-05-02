@@ -17,7 +17,7 @@ s3:
 
 server:
   host: 0.0.0.0
-  port: 8083
+  app_port: 8083
   secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3
   daemon_path: /app/daemon/daemon.py
   venv_path: /app/venv/bin/activate

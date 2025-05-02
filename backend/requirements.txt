@@ -1,8 +1,11 @@
 argparse==1.4.0
 beautifulsoup4==4.12.3
 boto3==1.37.4
-flask-cors==5.0.1
 Flask==3.1.0
+Flask-Admin==1.6.1
+flask-cors==5.0.1
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
 nltk==3.2.5
 Pillow==11.1.0
 psycopg2-binary==2.9.10
@@ -14,4 +17,5 @@ python-crontab==3.2.0
 PyYAML==6.0.2
 requests==2.32.3
 selenium==4.29.0
+SQLAlchemy==2.0.40
 urllib3==2.2.1

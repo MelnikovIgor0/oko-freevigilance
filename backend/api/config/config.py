@@ -23,7 +23,6 @@ class S3Config:
 class ServerConfig:
     host: str
     app_port: str
-    admin_panel_port: str
     secret_key: str
     daemon_path: str
     venv_path: str

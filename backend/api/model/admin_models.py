@@ -2,7 +2,10 @@ import uuid
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import (
+    ARRAY,
+    JSONB
+)
 import enum
 
 db = SQLAlchemy()
