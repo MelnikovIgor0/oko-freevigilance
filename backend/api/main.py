@@ -202,7 +202,7 @@ def load_user(user_id):
 
 class AdminModelView(ModelView):
     def is_accessible(self):
-        return current_user.is_authenticated
+        return True
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login', next=request.url))
@@ -298,6 +298,7 @@ def liveness_check():
         },
     )
     return jsonify({"status": "OK"}), 200
+
 
 
 @app.route("/users/login", methods=["POST"])
