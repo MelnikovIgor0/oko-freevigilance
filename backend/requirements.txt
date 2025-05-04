@@ -3,6 +3,7 @@ apispec-webframeworks==0.5.2
 argparse==1.4.0
 beautifulsoup4==4.12.3
 boto3==1.37.4
+flasgger==0.9.7.1
 Flask==3.1.0
 Flask-Admin==1.6.1
 flask-cors==5.0.1

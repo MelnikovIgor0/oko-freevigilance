@@ -117,7 +117,7 @@ app = Flask(__name__)
 
 # prepare logger and tracing
 
-os.makedirs("~/var/log/api", exist_ok=True)
+os.makedirs("/var/log/api", exist_ok=True)
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -138,7 +138,7 @@ class JsonFormatter(logging.Formatter):
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler("~/var/log/api/app.log")
+file_handler = logging.FileHandler("/var/log/api/app.log")
 file_handler.setFormatter(JsonFormatter())
 logger.addHandler(file_handler)
 
@@ -1148,7 +1148,7 @@ def delete_channel(channel_id: str):
                     },
                     "interval": {
                         "type": "string",
-                        "description": "Интервал проверки ресурса (например, '1h', '30m')"
+                        "description": "Интервал проверки ресурса в формате крон-выражения (например, '*/2 * * * *')"
                     },
                     "starts_from": {
                         "type": "integer",
@@ -1763,7 +1763,7 @@ def patch_resorce(resource_id: str):
                     },
                     "interval": {
                         "type": "string",
-                        "description": "Новый интервал проверки ресурса (например, '1h', '30m')"
+                        "description": "Интервал проверки ресурса в формате крон-выражения (например, '*/2 * * * *')"
                     },
                     "enabled": {
                         "type": "boolean",
@@ -3490,21 +3490,7 @@ def get_all_events():
     return jsonify({"events": events}), 200
 
 
-# swagger endpoints
-
-
-@app.route('/swagger.json')
-def create_swagger_spec():
-    """Endpoint for getting swagger documentation in JSON format"""
-    for route in app.url_map.iter_rules():
-        if route.endpoint != 'static' and route.endpoint != 'create_swagger_spec':
-            view_func = app.view_functions[route.endpoint]
-            if view_func.doc:
-                spec.path(view=view_func)
-                
-    return jsonify(spec.to_dict())
-
-
+# swagger endpoint
 @app.route('/api/docs')
 def swagger_ui():
     return f"""
