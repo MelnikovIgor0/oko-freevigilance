@@ -16,7 +16,7 @@ s3:
   aws_secret_access_key: pass1234
 
 redis:
-  host: localhost
+  host: redis
   port: 6379
   db: 0
 
