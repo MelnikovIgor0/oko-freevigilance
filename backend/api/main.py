@@ -531,6 +531,47 @@ def info():
 
 
 @app.route("/users/logout", methods=["POST"])
+@swag_from({
+    "summary": "Выход пользователя из системы",
+    "tags": ["users"],
+    "produces": ["application/json"],
+    "parameters": [
+        {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string",
+            "required": True,
+            "description": "JWT токен авторизации с префиксом Bearer"
+        }
+    ],
+    "responses": {
+        200: {
+            "description": "Успешный выход из системы",
+            "schema": {
+                "type": "object",
+                "properties": {}
+            }
+        },
+        401: {
+            "description": "Недействительный или истекший токен",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "error": {"type": "string"}
+                }
+            }
+        },
+        403: {
+            "description": "Пользователь не авторизован",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "error": {"type": "string"}
+                }
+            }
+        }
+    }
+})
 def logout():
     bearer = request.headers.get("Authorization")
     if not bearer:
