@@ -15,9 +15,15 @@ s3:
   aws_access_key_id: s3
   aws_secret_access_key: pass1234
 
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+
 server:
   host: 127.0.0.1
   app_port: 8083
+  session_duration: 86400
   secret_key: 66d9dd00-0295-4620-bf8d-265df3fd93d3
   daemon_path: /app/daemon/daemon.py
   venv_path: /app/venv/bin/activate

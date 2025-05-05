@@ -23,6 +23,7 @@ class S3Config:
 class ServerConfig:
     host: str
     app_port: str
+    session_duration: int
     secret_key: str
     daemon_path: str
     venv_path: str
@@ -30,10 +31,18 @@ class ServerConfig:
 
 
 @dataclass
+class RedisConfig:
+    host: str
+    port: str
+    db: int
+
+
+@dataclass
 class Config:
     postgres: PostgreConfig
     s3: S3Config
     server: ServerConfig
+    redis: RedisConfig
 
 
 def parse_config() -> Config:
@@ -44,4 +53,5 @@ def parse_config() -> Config:
         postgres=PostgreConfig(**data["postgres"]),
         s3=S3Config(**data["s3"]),
         server=ServerConfig(**data["server"]),
+        redis=RedisConfig(**data["redis"]),
     )

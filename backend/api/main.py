@@ -46,6 +46,11 @@ from api.model.user import (
     get_user_by_username,
     get_md5,
 )
+from api.model.redis_interactor import (
+    check_jwt,
+    delete_jwt,
+    save_jwt,
+)
 from api.validators import (
     validate_username,
     validate_email,
@@ -300,6 +305,8 @@ def token_required(f):
         token = data[1]
         if not token:
             return jsonify({"error": "token is missing"}), 403
+        if not check_jwt(cfg.redis, token):
+            return jsonify({"error": "token is invalid/expired"}), 401
         try:
             email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
         except Exception as error:
@@ -408,6 +415,10 @@ def login():
         },
         cfg.server.secret_key,
     )
+    print(cfg.redis)
+    print(f'token: {str(token)}')
+    print(cfg.server.session_duration)
+    save_jwt(cfg.redis, str(token), True, cfg.server.session_duration)
     return (
         jsonify(
             {
@@ -497,6 +508,8 @@ def info():
     token = data[1]
     if not token:
         return jsonify({"error": "token is missing"}), 403
+    if not check_jwt(cfg.redis, token):
+        return jsonify({"error": "token is invalid/expired"}), 401
     try:
         email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
     except Exception as error:
@@ -519,6 +532,18 @@ def info():
 
 @app.route("/users/logout", methods=["POST"])
 def logout():
+    bearer = request.headers.get("Authorization")
+    if not bearer:
+        return jsonify({"error": "user is not authorized"}), 403
+    data = bearer.split()
+    if len(data) != 2:
+        return jsonify({"error": "token is missing"}), 403
+    token = data[1]
+    if not token:
+        return jsonify({"error": "token is missing"}), 403
+    if not check_jwt(cfg.redis, token):
+        return jsonify({"error": "token is invalid/expired"}), 401
+    delete_jwt(cfg.redis, token)
     return jsonify({}), 200
 
 
@@ -1208,7 +1233,7 @@ def delete_channel(channel_id: str):
                             "name": {"type": "string"},
                             "description": {"type": "string"},
                             "keywords": {"type": "array", "items": {"type": "string"}},
-                            "interval": {"type": "integer"},
+                            "interval": {"type": "string"},
                             "starts_from": {"type": "integer"},
                             "make_screenshot": {"type": "boolean"},
                             "polygon": {"type": "object"}
@@ -1411,7 +1436,7 @@ def new_resource():
                                 "items": {"type": "string"},
                                 "description": "Ключевые слова для мониторинга"
                             },
-                            "interval": {"type": "integer", "description": "Интервал проверки ресурса в секундах"},
+                            "interval": {"type": "string", "description": "Интервал проверки ресурса в формате cron выражения"},
                             "starts_from": {"type": "integer", "description": "Unix timestamp времени начала мониторинга"},
                             "make_screenshot": {"type": "boolean", "description": "Флаг создания и сравнения скриншотов"},
                             "enabled": {"type": "boolean", "description": "Статус активности ресурса"},
@@ -1896,7 +1921,7 @@ def delete_resource(resource_id: str):
                                     "items": {"type": "string"},
                                     "description": "Ключевые слова для мониторинга"
                                 },
-                                "interval": {"type": "integer", "description": "Интервал проверки ресурса в секундах"},
+                                "interval": {"type": "string", "description": "Интервал проверки ресурса в формате cron-выражения"},
                                 "starts_from": {"type": "integer", "description": "Unix timestamp времени начала мониторинга"},
                                 "make_screenshot": {"type": "boolean", "description": "Флаг создания и сравнения скриншотов"},
                                 "enabled": {"type": "boolean", "description": "Статус активности ресурса"},

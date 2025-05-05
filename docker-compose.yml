@@ -90,7 +90,7 @@ services:
       - backend-network
     depends_on:
       - loki
-    restart: unless-stopped
+    restart: always
 
   loki:
     image: grafana/loki:2.7.0
@@ -103,7 +103,7 @@ services:
     command: -config.file=/etc/loki/config.yml
     networks:
       - backend-network
-    restart: unless-stopped
+    restart: always
 
   grafana:
     image: grafana/grafana:9.4.7
@@ -120,7 +120,32 @@ services:
       - backend-network
     depends_on:
       - loki
-    restart: unless-stopped
+    restart: always
+  
+  redis:
+    image: redis:alpine
+    container_name: my-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: always
+    networks:
+      - backend-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - REDIS_HOSTS=localhost:6379
+    ports:
+      - "6380:6380"
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - backend-network
 
   api:
     build:
@@ -140,6 +165,8 @@ services:
       - grafana
       - loki
       - promtail
+      - redis
+      - redis-commander
     networks:
       - backend-network
 
@@ -165,6 +192,7 @@ volumes:
   grafana_data:
   loki_data:
   postgres_data:
+  redis-data:
   seaweedfs_volume_data:
   seaweedfs_filer_data:
   seaweedfs_s3_data:

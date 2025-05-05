@@ -20,6 +20,7 @@ pypika==0.48.9
 pyTelegramBotAPI==4.26.0
 python-crontab==3.2.0
 PyYAML==6.0.2
+redis==6.0.0
 requests==2.32.3
 selenium==4.29.0
 SQLAlchemy==2.0.40
