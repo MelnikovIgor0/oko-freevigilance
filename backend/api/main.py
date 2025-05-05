@@ -212,7 +212,27 @@ def load_user(user_id):
 
 class AdminModelView(ModelView):
     def is_accessible(self):
-        return True
+        # If you test this functionality with no frontend/detached fronend, then
+        # for your convenience you should mock bearer token when you move by links of admin panel.
+        # like this:
+        # bearer = "bearer: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiYWRtaW5AYWRtaW4uY29tIiwiZXhwIjoxNzQ2NTYxMTM3fQ.0L1CoLky3IoDA1Surqr5RpZnblcVYBqhRuKIH6RGkok"
+        bearer = request.headers.get("Authorization")
+        if bearer is not None:
+            data = bearer.split()
+            if len(data) == 2:
+                token = bearer.split()[1]
+                if token:
+                    try:
+                        email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
+                        user = get_user_by_email(cfg.postgres, email)
+                        if user is None:
+                            return False
+                        if user.deleted_at is not None:
+                            return False
+                        return user.is_admin
+                    except Exception as error:
+                        return True
+        return False
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login', next=request.url))
@@ -314,6 +334,8 @@ def token_required(f):
         user = get_user_by_email(cfg.postgres, email)
         if user is None:
             return jsonify({"error": f"user {email} not found"}), 404
+        if user.deleted_at is not None:
+            return jsonify({"error": f"user {email} was deleted"}), 403
         return f(*args, **kwargs)
 
     return decorated
