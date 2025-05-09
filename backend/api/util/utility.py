@@ -6,12 +6,13 @@ from datetime import datetime
 from typing import List, Tuple
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import time
 import base64
+import os
+import time
 
 
 def build_query(resource: Resource, server_config: ServerConfig) -> str:
-    query = f'python3 {server_config.daemon_path}'
+    query = f'. {server_config.venv_path} && export CONFIG_FILE={os.environ["CONFIG_FILE"]} && python3 {server_config.daemon_path} > /app/cron.log 2>&1'
     query += f' -r {resource.id}'
     return query
 

@@ -29,8 +29,13 @@ COPY config/ ./config/
 COPY daemon/ ./daemon/
 COPY requirements.txt .
 
+RUN python3 -m venv /app/venv
+RUN . /app/venv/bin/activate
+
+ENV PATH="/app/venv/bin:$PATH"
+
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Install data for russian dictionary lemmatization and stemming
 RUN pip install -U pymorphy2-dicts-ru
@@ -43,4 +48,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8083
 
 # Command to run the application
-CMD ["python", "api/main.py"] 
+CMD ["/app/venv/bin/python", "api/main.py"] 
