@@ -92,6 +92,19 @@ class TestResourcesEndpoint(unittest.TestCase):
         self.channel_resource.channel_id = self.channel_id
         self.channel_resource.resource_id = self.resource_id
         self.channel_resource.enabled = True
+
+        self.active_channel_id = str(uuid.uuid4())
+        self.inactive_channel_id = str(uuid.uuid4())
+
+        self.active_channel_resource = MagicMock()
+        self.active_channel_resource.channel_id = self.active_channel_id
+        self.active_channel_resource.resource_id = self.resource_id
+        self.active_channel_resource.enabled = True
+        
+        self.inactive_channel_resource = MagicMock()
+        self.inactive_channel_resource.channel_id = self.inactive_channel_id
+        self.inactive_channel_resource.resource_id = self.resource_id
+        self.inactive_channel_resource.enabled = False
     
     def tearDown(self):
         self.token_patcher.stop()
@@ -2244,6 +2257,211 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_validate_uuid.assert_not_called()
         mock_get_resource.assert_not_called()
         mock_get_channel.assert_not_called()
+    
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    def test_get_channels_by_resource_success(self, mock_get_channel_resource, 
+                                           mock_get_resource, mock_validate_uuid, 
+                                           mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        
+        mock_get_channel_resource.return_value = [
+            self.active_channel_resource,
+            self.inactive_channel_resource
+        ]
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        
+        self.assertIn('channels', response_data)
+        self.assertEqual(len(response_data['channels']), 1)
+        self.assertEqual(response_data['channels'][0], self.active_channel_id)
+        self.assertNotIn(self.inactive_channel_id, response_data['channels'])
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    def test_get_channels_by_resource_no_channels(self, mock_get_channel_resource, 
+                                               mock_get_resource, mock_validate_uuid, 
+                                               mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        
+        mock_get_channel_resource.return_value = []
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        
+        self.assertIn('channels', response_data)
+        self.assertEqual(len(response_data['channels']), 0)
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    def test_get_channels_by_resource_only_inactive_channels(self, mock_get_channel_resource, 
+                                                          mock_get_resource, mock_validate_uuid, 
+                                                          mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        
+        mock_get_channel_resource.return_value = [self.inactive_channel_resource]
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        
+        self.assertIn('channels', response_data)
+        self.assertEqual(len(response_data['channels']), 0)
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    def test_get_channels_by_resource_multiple_active_channels(self, mock_get_channel_resource, 
+                                                            mock_get_resource, mock_validate_uuid, 
+                                                            mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        
+        active_channel1 = MagicMock()
+        active_channel1.channel_id = str(uuid.uuid4())
+        active_channel1.resource_id = self.resource_id
+        active_channel1.enabled = True
+        
+        active_channel2 = MagicMock()
+        active_channel2.channel_id = str(uuid.uuid4())
+        active_channel2.resource_id = self.resource_id
+        active_channel2.enabled = True
+        
+        mock_get_channel_resource.return_value = [
+            active_channel1,
+            active_channel2,
+            self.inactive_channel_resource
+        ]
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        
+        self.assertIn('channels', response_data)
+        self.assertEqual(len(response_data['channels']), 2)
+        self.assertIn(active_channel1.channel_id, response_data['channels'])
+        self.assertIn(active_channel2.channel_id, response_data['channels'])
+        self.assertNotIn(self.inactive_channel_id, response_data['channels'])
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    def test_get_channels_by_resource_invalid_uuid(self, mock_validate_uuid, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = False
+        
+        response = self.app.get(
+            '/channels_by_resource/invalid-uuid',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["error"], "resource_id is invalid")
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.get_resource_by_id')
+    def test_get_channels_by_resource_not_found(self, mock_get_resource, 
+                                             mock_validate_uuid, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = None
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 404)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["error"], f"resource {self.resource_id} not found")
+
+    def test_get_channels_by_resource_unauthorized(self):
+        response = self.app.get(f'/channels_by_resource/{self.resource_id}')
+        
+        self.assertEqual(response.status_code, 403)
+        response_data = json.loads(response.data.decode())
+        self.assertIn('error', response_data)
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    def test_get_channels_by_resource_deleted_user(self, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = 228228227
+        mock_get_user.return_value = mock_user
+        
+        response = self.app.get(
+            f'/channels_by_resource/{self.resource_id}',
+            headers={'Authorization': f'Bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 403)
 
 
 if __name__ == '__main__':
