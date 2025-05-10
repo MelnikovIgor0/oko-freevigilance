@@ -1,6 +1,8 @@
 import json
 import unittest
 from unittest.mock import patch, MagicMock
+from datetime import datetime
+import uuid
 
 from api.main import app, cfg
 
@@ -482,7 +484,6 @@ class TestResourcesEndpoint(unittest.TestCase):
     @patch('api.main.validate_uuid')
     def test_get_resource_success(self, mock_validate_uuid, mock_get_channel_resource, 
                                  mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
-        # Настройка моков
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
@@ -491,8 +492,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
         mock_get_resource.return_value = self.resource
-        
-        # Настройка активных каналов
+
         channel1 = MagicMock()
         channel1.channel_id = "channel1"
         channel1.enabled = True
@@ -500,40 +500,35 @@ class TestResourcesEndpoint(unittest.TestCase):
         channel2.channel_id = "channel2"
         channel2.enabled = False
         mock_get_channel_resource.return_value = [channel1, channel2]
-        
-        # Выполнение запроса
+
         response = self.app.get(
             '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
         
-        # Проверка результатов
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.data.decode())
         self.assertEqual(response_data["resource"]["id"], 1)
         self.assertEqual(response_data["resource"]["url"], "https://example.com")
-        self.assertEqual(response_data["resource"]["channels"], ["channel1"])  # Только активный канал
+        self.assertEqual(response_data["resource"]["channels"], ["channel1"])
 
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
     @patch('api.main.validate_uuid')
     def test_get_resource_invalid_uuid(self, mock_validate_uuid, mock_get_user_by_email, mock_jwt_decode):
-        # Настройка моков
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
         mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = False
-        
-        # Выполнение запроса с невалидным UUID
+
         invalid_id = "not-a-uuid"
         response = self.app.get(
             f'/resources/{invalid_id}',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
-        
-        # Проверка результатов
+
         self.assertEqual(response.status_code, 400)
         self.assertIn('resource_id is invalid', response.data.decode())
 
@@ -543,22 +538,19 @@ class TestResourcesEndpoint(unittest.TestCase):
     @patch('api.main.validate_uuid')
     def test_get_resource_not_found(self, mock_validate_uuid, mock_get_resource, 
                                    mock_get_user_by_email, mock_jwt_decode):
-        # Настройка моков
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
         mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
-        mock_get_resource.return_value = None  # Ресурс не найден
-        
-        # Выполнение запроса
+        mock_get_resource.return_value = None
+
         response = self.app.get(
             '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
-        
-        # Проверка результатов
+
         self.assertEqual(response.status_code, 404)
 
     @patch('api.main.jwt.decode')
@@ -568,28 +560,24 @@ class TestResourcesEndpoint(unittest.TestCase):
     @patch('api.main.validate_uuid')
     def test_get_resource_with_no_starts_from(self, mock_validate_uuid, mock_get_channel_resource, 
                                             mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
-        # Настройка моков
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
         mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
-        
-        # Создаем ресурс без starts_from
+
         resource_without_start = self.resource
         resource_without_start.starts_from = None
         mock_get_resource.return_value = resource_without_start
         
-        mock_get_channel_resource.return_value = []  # Нет каналов
-        
-        # Выполнение запроса
+        mock_get_channel_resource.return_value = []
+
         response = self.app.get(
             '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
-        
-        # Проверка результатов
+
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.data.decode())
         self.assertEqual(response_data["resource"]["starts_from"], None)
@@ -602,7 +590,6 @@ class TestResourcesEndpoint(unittest.TestCase):
     @patch('api.main.validate_uuid')
     def test_get_resource_with_all_channels_disabled(self, mock_validate_uuid, mock_get_channel_resource, 
                                                    mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
-        # Настройка моков
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
@@ -610,8 +597,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
         mock_get_resource.return_value = self.resource
-        
-        # Настройка неактивных каналов
+
         channel1 = MagicMock()
         channel1.channel_id = "channel1"
         channel1.enabled = False
@@ -619,27 +605,278 @@ class TestResourcesEndpoint(unittest.TestCase):
         channel2.channel_id = "channel2"
         channel2.enabled = False
         mock_get_channel_resource.return_value = [channel1, channel2]
-        
-        # Выполнение запроса
+
         response = self.app.get(
             '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
-        
-        # Проверка результатов
+
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.data.decode())
-        self.assertEqual(response_data["resource"]["channels"], [])  # Пустой список каналов
+        self.assertEqual(response_data["resource"]["channels"], [])
 
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
     def test_get_resource_unauthorized(self, mock_get_user_by_email, mock_jwt_decode):
-        # Тест без токена авторизации
         response = self.app.get('/resources/1')
-        
-        # В зависимости от реализации @token_required декоратора,
-        # ожидаем ошибку авторизации (401 или 403)
         self.assertIn(response.status_code, [401, 403])
+    
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.update_resource')
+    @patch('api.main.update_resource_channels')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.validate_description')
+    @patch('api.main.validate_keywords')
+    @patch('api.main.validate_interval')
+    @patch('api.main.get_interval')
+    @patch('api.main.validate_date_time')
+    @patch('api.main.update_daemon_cron_job_for_resource')
+    def test_patch_resource_success(self, mock_update_cron, mock_validate_date, mock_get_interval, 
+                                   mock_validate_interval, mock_validate_keywords, mock_validate_description, 
+                                   mock_validate_uuid, mock_update_channels, mock_update_resource, 
+                                   mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.side_effect = [self.resource, self.resource]
+        mock_validate_description.return_value = True
+        mock_validate_keywords.return_value = True
+        mock_validate_interval.return_value = True
+        mock_get_interval.return_value = "* * * * *"
+        mock_validate_date.return_value = datetime(2023, 2, 1, 12, 0, 0)
+        payload = {
+            "description": "Updated Description",
+            "keywords": ["updated", "keywords"],
+            "interval": "* * * * *",
+            "enabled": False,
+            "areas": {"sensitivity": 0.05},
+            "channels": [str(uuid.uuid4())],
+            "starts_from": 228228227
+        }
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["resource"]["id"], 1)
+        mock_update_resource.assert_called_once()
+        mock_update_channels.assert_called_once()
+        mock_update_cron.assert_called_once()
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    def test_patch_resource_invalid_uuid(self, mock_validate_uuid, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = False
+        
+        response = self.app.patch(
+            f'/resources/invalid-uuid',
+            data=json.dumps({}),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('resource_id is invalid', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    def test_patch_resource_not_found(self, mock_validate_uuid, mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = None
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps({}),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(f'resource 1 not found', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.validate_description')
+    def test_patch_resource_invalid_description(self, mock_validate_description, mock_validate_uuid, 
+                                              mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        mock_validate_description.return_value = False
+        
+        payload = {
+            "description": "Invalid Description"
+        }
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('description is invalid', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.validate_description')
+    @patch('api.main.validate_keywords')
+    def test_patch_resource_invalid_keywords(self, mock_validate_keywords, mock_validate_description, 
+                                           mock_validate_uuid, mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        mock_validate_description.return_value = True
+        mock_validate_keywords.return_value = False
+        
+        payload = {
+            "description": "Valid Description",
+            "keywords": ["invalid", "keywords"]
+        }
+        
+        response = self.app.patch(f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('keywords are invalid', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    @patch('api.main.validate_description')
+    @patch('api.main.validate_keywords')
+    @patch('api.main.validate_interval')
+    def test_patch_resource_invalid_interval(self, mock_validate_interval, mock_validate_keywords, 
+                                           mock_validate_description, mock_validate_uuid, 
+                                           mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        mock_validate_description.return_value = True
+        mock_validate_keywords.return_value = True
+        mock_validate_interval.return_value = False
+        
+        payload = {
+            "description": "Valid Description",
+            "keywords": ["valid", "keywords"],
+            "interval": "invalid-interval"
+        }
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('interval is invalid', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_by_id')
+    @patch('api.main.validate_uuid')
+    def test_patch_resource_channel_not_found(self, mock_validate_uuid, mock_get_channel, 
+                                            mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.resource
+        mock_get_channel.return_value = None
+        
+        channel_id = str(uuid.uuid4())
+        payload = {
+            "channels": [channel_id]
+        }
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(f'channel {channel_id} not found', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    def test_patch_resource_sensitivity_without_polygon(self, mock_validate_uuid, 
+                                                     mock_get_resource, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        
+        resource_without_polygon = self.resource
+        resource_without_polygon.polygon = None
+        mock_get_resource.return_value = resource_without_polygon
+        
+        payload = {
+            "sensitivity": 75.0
+        }
+        
+        response = self.app.patch(
+            f'/resources/1',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('sensitivity and polygon are mutually exclusive', response.data.decode())
 
 if __name__ == '__main__':
     unittest.main()

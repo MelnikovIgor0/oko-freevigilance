@@ -1745,10 +1745,13 @@ def patch_resorce(resource_id: str):
         interval = get_interval(interval)
     enabled = body.get("enabled")
     polygon = body.get("areas")
-    if isinstance(polygon, list):
-        polygon[0]['sensitivity'] = resource.polygon[0]['sensitivity']
-    else:
-        polygon['sensitivity'] = resource.polygon['sensitivity']
+    if polygon is not None:
+        if type(polygon) != type(resource.polygon):
+            return jsonify({"error": "polygon is invalid"}), 400
+        if isinstance(polygon, list) and len(resource.polygon) > 0:
+            polygon[0]['sensitivity'] = resource.polygon[0]['sensitivity']
+        else:
+            polygon['sensitivity'] = resource.polygon['sensitivity']
     if polygon is None:
         polygon = resource.polygon
     channels = body.get("channels")

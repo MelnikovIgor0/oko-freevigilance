@@ -64,7 +64,7 @@ def link_channel_to_resource(cfg: PostgreConfig, channel_id: str, resource_id: s
 def unlink_channel_from_resource(cfg: PostgreConfig, channel_id: str, resource_id: str) -> None:
     linked_channels = get_channel_resource_by_resource_id(cfg, resource_id)
     for channel in linked_channels:
-        if channel.channel.channel_id == channel_id and channel.enabled:
+        if channel.channel_id == channel_id and channel.enabled:
             change_channel_resource_enabled(cfg, channel_id, resource_id, False)
             return
 

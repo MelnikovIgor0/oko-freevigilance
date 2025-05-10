@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import datetime
 import json
 import psycopg2
+import psycopg2.extras
 from pypika import Table, Query
 from typing import Optional, Any, List, Dict
 import uuid
@@ -120,7 +121,7 @@ def update_resource(
     if description is not None:
         query = query.set(resources_table.description, description)
     if keywords is not None:
-        query = query.set(resources_table.key_words, json.dumps(keywords))
+        query = query.set(resources_table.key_words, str(keywords).replace('[', '{').replace(']', '}').replace('\'', ''))
     if interval is not None:
         query = query.set(resources_table.interval, interval)
     if enabled is not None:
