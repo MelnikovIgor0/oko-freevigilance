@@ -344,7 +344,7 @@ def token_required(f):
             return jsonify({"error": "token is invalid/expired"}), 401
         user = get_user_by_email(cfg.postgres, email)
         if user is None:
-            return jsonify({"error": f"user {email} not found"}), 404
+            return jsonify({"error": f"user {email} not found"}), 401
         if user.deleted_at is not None:
             return jsonify({"error": f"user {email} was deleted"}), 403
         return f(*args, **kwargs)
@@ -2427,11 +2427,11 @@ def get_channels_by_resource(resource_id: str):
                         "description": "Данные о событии мониторинга",
                         "properties": {
                             "id": {"type": "string", "format": "uuid", "description": "Уникальный идентификатор события"},
+                            "snapshot_id": {"type": "string", "format": "uuid", "description": "Идентификатор снапшота события"},
                             "resource_id": {"type": "string", "format": "uuid", "description": "Идентификатор ресурса"},
                             "timestamp": {"type": "string", "format": "date-time", "description": "Время возникновения события"},
                             "type": {"type": "string", "description": "Тип события мониторинга"},
                             "status": {"type": "string", "description": "Статус события"},
-                            "details": {"type": "object", "description": "Дополнительная информация о событии"}
                         }
                     }
                 }
