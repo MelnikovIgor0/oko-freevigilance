@@ -459,6 +459,168 @@ class TestResourcesEndpoint(unittest.TestCase):
         
         self.assertEqual(response.status_code, 400)
         self.assertIn('polygon is invalid', response.data.decode())
+    
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    @patch('api.main.validate_uuid')
+    def test_get_resource_success(self, mock_validate_uuid, mock_get_channel_resource, 
+                                 mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
+        # Настройка моков
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_get_user_by_email.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.test_resource
+        
+        # Настройка активных каналов
+        channel1 = MagicMock()
+        channel1.channel_id = "channel1"
+        channel1.enabled = True
+        channel2 = MagicMock()
+        channel2.channel_id = "channel2"
+        channel2.enabled = False
+        mock_get_channel_resource.return_value = [channel1, channel2]
+        
+        # Выполнение запроса
+        response = self.app.get(
+            self.resource_url,
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        # Проверка результатов
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["resource"]["id"], self.valid_resource_id)
+        self.assertEqual(response_data["resource"]["url"], "https://example.com")
+        self.assertEqual(response_data["resource"]["channels"], ["channel1"])  # Только активный канал
+        self.assertEqual(response_data["resource"]["starts_from"], int(self.test_resource.starts_from.timestamp()))
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.validate_uuid')
+    def test_get_resource_invalid_uuid(self, mock_validate_uuid, mock_get_user_by_email, mock_jwt_decode):
+        # Настройка моков
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_get_user_by_email.return_value = mock_user
+        mock_validate_uuid.return_value = False
+        
+        # Выполнение запроса с невалидным UUID
+        invalid_id = "not-a-uuid"
+        response = self.app.get(
+            f'/resources/{invalid_id}',
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        # Проверка результатов
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('resource_id is invalid', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.validate_uuid')
+    def test_get_resource_not_found(self, mock_validate_uuid, mock_get_resource, 
+                                   mock_get_user_by_email, mock_jwt_decode):
+        # Настройка моков
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_get_user_by_email.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = None  # Ресурс не найден
+        
+        # Выполнение запроса
+        response = self.app.get(
+            self.resource_url,
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        # Проверка результатов
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(f'resource {self.valid_resource_id} not found', response.data.decode())
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    @patch('api.main.validate_uuid')
+    def test_get_resource_with_no_starts_from(self, mock_validate_uuid, mock_get_channel_resource, 
+                                            mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
+        # Настройка моков
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_get_user_by_email.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        
+        # Создаем ресурс без starts_from
+        resource_without_start = self.test_resource
+        resource_without_start.starts_from = None
+        mock_get_resource.return_value = resource_without_start
+        
+        mock_get_channel_resource.return_value = []  # Нет каналов
+        
+        # Выполнение запроса
+        response = self.app.get(
+            self.resource_url,
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        # Проверка результатов
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["resource"]["starts_from"], None)
+        self.assertEqual(response_data["resource"]["channels"], [])
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_resource_by_id')
+    @patch('api.main.get_channel_resource_by_resource_id')
+    @patch('api.main.validate_uuid')
+    def test_get_resource_with_all_channels_disabled(self, mock_validate_uuid, mock_get_channel_resource, 
+                                                   mock_get_resource, mock_get_user_by_email, mock_jwt_decode):
+        # Настройка моков
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_get_user_by_email.return_value = mock_user
+        mock_validate_uuid.return_value = True
+        mock_get_resource.return_value = self.test_resource
+        
+        # Настройка неактивных каналов
+        channel1 = MagicMock()
+        channel1.channel_id = "channel1"
+        channel1.enabled = False
+        channel2 = MagicMock()
+        channel2.channel_id = "channel2"
+        channel2.enabled = False
+        mock_get_channel_resource.return_value = [channel1, channel2]
+        
+        # Выполнение запроса
+        response = self.app.get(
+            self.resource_url,
+            headers={'Authorization': f'Bearer {self.valid_token}'}
+        )
+        
+        # Проверка результатов
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["resource"]["channels"], [])  # Пустой список каналов
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    def test_get_resource_unauthorized(self, mock_get_user_by_email, mock_jwt_decode):
+        # Тест без токена авторизации
+        response = self.app.get(self.resource_url)
+        
+        # В зависимости от реализации @token_required декоратора,
+        # ожидаем ошибку авторизации (401 или 403)
+        self.assertIn(response.status_code, [401, 403])
 
 if __name__ == '__main__':
     unittest.main()

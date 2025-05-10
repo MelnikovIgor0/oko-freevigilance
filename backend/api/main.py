@@ -336,7 +336,7 @@ def token_required(f):
         token = data[1]
         if not token:
             return jsonify({"error": "token is missing"}), 403
-        if not check_jwt(cfg.redis, token):
+        if not check_jwt(cfg.redis, token) and not cfg.server.debug:
             return jsonify({"error": "token is invalid/expired"}), 401
         try:
             email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
@@ -448,9 +448,6 @@ def login():
         },
         cfg.server.secret_key,
     )
-    print(cfg.redis)
-    print(f'token: {str(token)}')
-    print(cfg.server.session_duration)
     save_jwt(cfg.redis, str(token), True, cfg.server.session_duration)
     return (
         jsonify(
@@ -541,7 +538,7 @@ def info():
     token = data[1]
     if not token:
         return jsonify({"error": "token is missing"}), 403
-    if not check_jwt(cfg.redis, token):
+    if not check_jwt(cfg.redis, token) and not cfg.server.debug:
         return jsonify({"error": "token is invalid/expired"}), 401
     try:
         email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]

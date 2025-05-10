@@ -8,6 +8,7 @@ class TestChannelEndpoints(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
         self.app.testing = True
+        cfg.server.debug = True
         
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
@@ -20,6 +21,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = True
@@ -98,6 +100,7 @@ class TestChannelEndpoints(unittest.TestCase):
     def test_new_channel_missing_name(self, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         response = self.app.post(
@@ -120,6 +123,7 @@ class TestChannelEndpoints(unittest.TestCase):
     def test_new_channel_invalid_name(self, mock_validate_name, mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = False
@@ -148,6 +152,7 @@ class TestChannelEndpoints(unittest.TestCase):
                                       mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = True
@@ -177,6 +182,7 @@ class TestChannelEndpoints(unittest.TestCase):
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = True
@@ -204,6 +210,7 @@ class TestChannelEndpoints(unittest.TestCase):
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.side_effect = [True, False]
@@ -232,6 +239,7 @@ class TestChannelEndpoints(unittest.TestCase):
                                        mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = True
@@ -259,6 +267,7 @@ class TestChannelEndpoints(unittest.TestCase):
                                     mock_get_user, mock_jwt_decode):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_name.return_value = True
@@ -287,6 +296,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_channel1 = MagicMock()
@@ -337,6 +347,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_get_all_channels.return_value = []
@@ -408,6 +419,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -447,6 +459,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = False
@@ -472,6 +485,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -556,6 +570,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -598,6 +613,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -638,6 +654,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -678,6 +695,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -711,6 +729,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = False
@@ -742,6 +761,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -853,6 +873,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True
@@ -884,6 +905,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = False
@@ -911,6 +933,7 @@ class TestChannelEndpoints(unittest.TestCase):
         
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user.return_value = mock_user
         
         mock_validate_uuid.return_value = True

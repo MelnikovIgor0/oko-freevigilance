@@ -22,6 +22,7 @@ class TestLoginEndpoint(unittest.TestCase):
         mock_user.email = "test@example.com"
         mock_user.password = "hashed_password"
         mock_user.deleted_at = None
+        mock_user.is_admin = False
         mock_get_user.return_value = mock_user
         
         mock_get_md5.return_value = "hashed_password"
@@ -113,9 +114,12 @@ class TestLoginEndpoint(unittest.TestCase):
     def test_login_incorrect_password(self, mock_get_md5, mock_get_user):
         mock_user = MagicMock()
         mock_user.password = "correct_hash"
+        mock_user.deleted_at = None
+        mock_user.is_admin = False
         mock_get_user.return_value = mock_user
         
         mock_get_md5.return_value = "incorrect_hash"
+        
         
         response = self.app.post(
             '/users/login',
@@ -143,6 +147,7 @@ class TestLoginEndpoint(unittest.TestCase):
         mock_user.email = "test@example.com"
         mock_user.password = "hashed_password"
         mock_user.deleted_at = None
+        mock_user.is_admin = False
         mock_get_user.return_value = mock_user
         
         mock_get_md5.return_value = "hashed_password"

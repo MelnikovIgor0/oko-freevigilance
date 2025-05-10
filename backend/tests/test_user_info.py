@@ -20,6 +20,7 @@ class TestInfoEndpoint(unittest.TestCase):
         mock_user.username = "testuser"
         mock_user.email = "test@example.com"
         mock_user.deleted_at = None
+        mock_user.is_admin = False
         mock_get_user.return_value = mock_user
         
         response = self.app.get(
@@ -33,6 +34,7 @@ class TestInfoEndpoint(unittest.TestCase):
         self.assertEqual(data["user"]["username"], "testuser")
         self.assertEqual(data["user"]["email"], "test@example.com")
         self.assertIsNone(data["user"]["deleted_at"])
+        self.assertFalse(data["user"]["is_admin"])
         
         mock_get_user.assert_called_once_with(cfg.postgres, "test@example.com")
     
