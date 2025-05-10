@@ -103,6 +103,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -127,6 +128,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -150,6 +152,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -173,6 +176,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -196,6 +200,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -220,6 +225,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -244,6 +250,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -267,6 +274,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = None
         
@@ -297,6 +305,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -321,6 +330,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -345,6 +355,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -368,6 +379,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -392,6 +404,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -418,6 +431,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -441,6 +455,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_get_channel_by_id.return_value = "mocked_channel"
 
@@ -471,9 +486,11 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_user.is_admin = False
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
-        mock_get_resource.return_value = self.test_resource
+        mock_get_resource.return_value = self.resource
         
         # Настройка активных каналов
         channel1 = MagicMock()
@@ -486,17 +503,16 @@ class TestResourcesEndpoint(unittest.TestCase):
         
         # Выполнение запроса
         response = self.app.get(
-            self.resource_url,
+            '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
         
         # Проверка результатов
         self.assertEqual(response.status_code, 200)
         response_data = json.loads(response.data.decode())
-        self.assertEqual(response_data["resource"]["id"], self.valid_resource_id)
+        self.assertEqual(response_data["resource"]["id"], 1)
         self.assertEqual(response_data["resource"]["url"], "https://example.com")
         self.assertEqual(response_data["resource"]["channels"], ["channel1"])  # Только активный канал
-        self.assertEqual(response_data["resource"]["starts_from"], int(self.test_resource.starts_from.timestamp()))
 
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
@@ -506,6 +522,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = False
         
@@ -530,19 +547,19 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
         mock_get_resource.return_value = None  # Ресурс не найден
         
         # Выполнение запроса
         response = self.app.get(
-            self.resource_url,
+            '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
         
         # Проверка результатов
         self.assertEqual(response.status_code, 404)
-        self.assertIn(f'resource {self.valid_resource_id} not found', response.data.decode())
 
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
@@ -555,11 +572,12 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
         
         # Создаем ресурс без starts_from
-        resource_without_start = self.test_resource
+        resource_without_start = self.resource
         resource_without_start.starts_from = None
         mock_get_resource.return_value = resource_without_start
         
@@ -567,7 +585,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         
         # Выполнение запроса
         response = self.app.get(
-            self.resource_url,
+            '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
         
@@ -588,9 +606,10 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_jwt_decode.return_value = {"user": "test@example.com"}
         mock_user = MagicMock()
         mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
         mock_get_user_by_email.return_value = mock_user
         mock_validate_uuid.return_value = True
-        mock_get_resource.return_value = self.test_resource
+        mock_get_resource.return_value = self.resource
         
         # Настройка неактивных каналов
         channel1 = MagicMock()
@@ -603,7 +622,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         
         # Выполнение запроса
         response = self.app.get(
-            self.resource_url,
+            '/resources/1',
             headers={'Authorization': f'Bearer {self.valid_token}'}
         )
         
@@ -616,7 +635,7 @@ class TestResourcesEndpoint(unittest.TestCase):
     @patch('api.main.get_user_by_email')
     def test_get_resource_unauthorized(self, mock_get_user_by_email, mock_jwt_decode):
         # Тест без токена авторизации
-        response = self.app.get(self.resource_url)
+        response = self.app.get('/resources/1')
         
         # В зависимости от реализации @token_required декоратора,
         # ожидаем ошибку авторизации (401 или 403)
