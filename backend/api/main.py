@@ -92,17 +92,11 @@ from functools import wraps
 import urllib.parse
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from flask_login import (
-    LoginManager,
-    login_user,
-    logout_user,
-    login_required,
-    current_user
-)
 from werkzeug.security import (
     check_password_hash,
     generate_password_hash
 )
+from flask_admin.form.widgets import Select2Widget
 from api.model.admin_models import (
     db,
     User,
@@ -116,6 +110,7 @@ import os
 from dataclasses import dataclass
 import yaml
 import hashlib
+from wtforms import SelectField
 
 # create flask app
 app = Flask(__name__)
@@ -202,14 +197,6 @@ db.init_app(app)
 
 # admin panel
 
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(user_id)
-
 class AdminModelView(ModelView):
     def is_accessible(self):
         # If you test this functionality with no frontend/detached fronend, then
@@ -276,10 +263,34 @@ class ChannelResourceModelView(AdminModelView):
     column_filters = ['enabled']
 
 
+
 class MonitoringEventModelView(AdminModelView):
-    column_list = ['id', 'name', 'resource_id', 'created_at', 'status']
-    column_searchable_list = ['name']
-    column_filters = ['status', 'created_at']
+    column_list = ('id', 'name', 'snapshot_id', 'resource_id', 'created_at', 'status')
+    column_searchable_list = ('name',)
+    column_filters = ('status', 'created_at')
+    form_overrides = {
+        'status': SelectField
+    }
+    form_args = {
+        'status': {
+            'choices': [
+                ('CREATED', 'CREATED'),
+                ('NOTIFIED', 'NOTIFIED'),
+                ('WATCHED', 'WATCHED'),
+                ('REACTED', 'REACTED')
+            ]
+        }
+    }
+
+    def create_form(self, obj=None):
+        form = super(MonitoringEventModelView, self).create_form(obj)
+        form.status.widget = Select2Widget()
+        return form
+    
+    def edit_form(self, obj=None):
+        form = super(MonitoringEventModelView, self).edit_form(obj)
+        form.status.widget = Select2Widget()
+        return form
 
 
 admin = Admin(app, name='Admin Panel', template_mode='bootstrap4')

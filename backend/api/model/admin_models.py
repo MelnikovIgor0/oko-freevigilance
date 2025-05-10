@@ -16,7 +16,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(32), nullable=False)
-    email = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), nullable=False)
     deleted_at = db.Column(db.DateTime)
     
     def is_active(self):
@@ -47,7 +47,7 @@ class Channel(db.Model):
     __tablename__ = 'channels'
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
     params = db.Column(JSONB, nullable=False)
     enabled = db.Column(db.Boolean, nullable=False)
