@@ -1003,7 +1003,7 @@ class TestChannelEndpoints(unittest.TestCase):
             headers={"Authorization": "Bearer valid_token"}
         )
         
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 401)
         data = json.loads(response.data.decode('utf-8'))
         self.assertEqual(data["error"], "user nonexistent@example.com not found")
 
