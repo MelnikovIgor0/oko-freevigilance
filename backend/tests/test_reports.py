@@ -1,8 +1,10 @@
+import csv
+import io
 import json
 import uuid
 from datetime import datetime, timedelta
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 from api.main import app, cfg
 
@@ -34,6 +36,25 @@ class TestGetFiltredEvents(TestCase):
                 "status": "NOTIFIED"
             }
         ]
+
+        self.resource_id = str(uuid.uuid4())
+        self.snapshot_id_1 = self.resource_id + "_1"
+        self.snapshot_id_2 = self.resource_id + "_2"
+        
+        self.event_1 = MagicMock()
+        self.event_1.id = "event1"
+        self.event_1.name = "keyword detected"
+        self.event_1.resource_id = self.resource_id
+        self.event_1.snapshot_id = self.snapshot_id_1
+        
+        self.event_2 = MagicMock()
+        self.event_2.id = "event2"
+        self.event_2.name = "image similarity detected"
+        self.event_2.resource_id = self.resource_id
+        self.event_2.snapshot_id = self.snapshot_id_2
+        
+        self.snapshot_time_1 = "2023-01-01T10:00:00Z"
+        self.snapshot_time_2 = "2023-01-02T11:00:00Z"
 
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')
@@ -520,3 +541,219 @@ class TestGetFiltredEvents(TestCase):
         self.assertEqual(response.status_code, 401)
         response_data = json.loads(response.data.decode())
         self.assertIn('error', response_data)
+    
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_monitoring_event_by_id')
+    @patch('api.main.filter_monitoring_events_for_report')
+    @patch('api.main.get_object_created_at')
+    def test_generate_report_with_event_ids(self, mock_get_object_created_at, 
+                                        mock_filter_events, mock_get_event, 
+                                        mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        
+        mock_get_event.side_effect = [self.event_1, self.event_2]
+        
+        mock_filter_events.return_value = [self.event_1, self.event_2]
+        
+        mock_get_object_created_at.side_effect = [
+            self.snapshot_time_1,
+            self.snapshot_time_2,
+        ]
+        
+        payload = {
+            "event_ids": ["event1", "event2"]
+        }
+        
+        response = self.app.post(
+            '/report',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, 'text/csv; charset=utf-8')
+        self.assertEqual(response.headers['Content-Disposition'], 'attachment;filename=data.csv')
+        
+        mock_get_event.assert_has_calls([
+            call(cfg.postgres, "event1"),
+            call(cfg.postgres, "event2")
+        ])
+        mock_filter_events.assert_called_once_with(cfg.postgres, None, ["event1", "event2"])
+        
+        csv_content = response.data.decode('utf-8')
+        csv_reader = csv.reader(io.StringIO(csv_content))
+        rows = list(csv_reader)
+        
+        self.assertEqual(rows[0], ["resource_id", "snapshot_id", "time", "image", "text"])
+        
+        expected_rows = [
+            [self.resource_id, self.snapshot_id_1, self.snapshot_time_1, "False", "True"],
+            [self.resource_id, self.snapshot_id_2, self.snapshot_time_2, "True", "False"]
+            ]
+        
+        sorted_expected = sorted(expected_rows, key=lambda x: x[1])
+        sorted_actual = sorted(rows[1:], key=lambda x: x[1])
+        
+        self.assertEqual(sorted_actual, sorted_expected)
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_object_created_at')
+    @patch('api.main.filter_monitoring_events_for_report')
+    def test_generate_report_with_snapshot_ids(self, mock_filter_events, 
+                                          mock_get_object_created_at, 
+                                          mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        
+        mock_get_object_created_at.side_effect = [
+            self.snapshot_time_1,
+            None,
+            self.snapshot_time_2,
+            None,
+            self.snapshot_time_1,
+            self.snapshot_time_2,
+        ]
+        
+        mock_filter_events.return_value = []
+        
+        payload = {
+            "snapshot_ids": [self.snapshot_id_1, self.snapshot_id_2]
+        }
+        
+        response = self.app.post(
+            '/report',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, 'text/csv; charset=utf-8')
+        
+        mock_filter_events.assert_called_once_with(
+            cfg.postgres, 
+            [self.snapshot_id_1, self.snapshot_id_2], 
+            None
+        )
+        
+        csv_content = response.data.decode('utf-8')
+        csv_reader = csv.reader(io.StringIO(csv_content))
+        rows = list(csv_reader)
+        
+        self.assertEqual(rows[0], ["resource_id", "snapshot_id", "time", "image", "text"])
+        
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    @patch('api.main.get_monitoring_event_by_id')
+    @patch('api.main.get_object_created_at')
+    @patch('api.main.filter_monitoring_events_for_report')
+    def test_generate_report_with_both_ids(self, mock_filter_events, 
+                                      mock_get_object_created_at, 
+                                      mock_get_event, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        
+        mock_get_event.side_effect = [self.event_1, self.event_2]
+        
+        mock_filter_events.return_value = [self.event_1, self.event_2]
+        
+        mock_get_object_created_at.side_effect = [
+            self.snapshot_time_1,
+            None,
+            self.snapshot_time_2,
+            None,
+            self.snapshot_time_1,
+            self.snapshot_time_2,
+        ]
+        
+        payload = {
+            "event_ids": ["event1", "event2"],
+            "snapshot_ids": [self.snapshot_id_1, self.snapshot_id_2]
+        }
+        
+        response = self.app.post(
+            '/report',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        
+        mock_get_event.assert_has_calls([
+            call(cfg.postgres, "event1"),
+            call(cfg.postgres, "event2")
+        ])
+        mock_filter_events.assert_called_once_with(
+            cfg.postgres, 
+            [self.snapshot_id_1, self.snapshot_id_2], 
+            ["event1", "event2"]
+        )
+        
+        csv_content = response.data.decode('utf-8')
+        csv_reader = csv.reader(io.StringIO(csv_content))
+        rows = list(csv_reader)
+        
+        self.assertEqual(len(rows), 3)
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    def test_generate_report_invalid_event_ids_format(self, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        
+        payload = {
+            "event_ids": "not-a-list"
+        }
+        
+        response = self.app.post(
+            '/report',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["error"], "event_ids should be list")
+
+    @patch('api.main.jwt.decode')
+    @patch('api.main.get_user_by_email')
+    def test_generate_report_invalid_snapshot_ids_format(self, mock_get_user, mock_jwt_decode):
+        mock_jwt_decode.return_value = {"user": "test@example.com"}
+        mock_user = MagicMock()
+        mock_user.email = "test@example.com"
+        mock_user.deleted_at = None
+        mock_get_user.return_value = mock_user
+        
+        payload = {
+            "snapshot_ids": "not-a-list"
+        }
+        
+        response = self.app.post(
+            '/report',
+            data=json.dumps(payload),
+            content_type='application/json',
+            headers={'Authorization': f'bearer: {self.valid_token}'}
+        )
+        
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.data.decode())
+        self.assertEqual(response_data["error"], "snapshot_ids should be list")
