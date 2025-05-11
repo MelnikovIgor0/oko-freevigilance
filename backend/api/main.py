@@ -477,7 +477,7 @@ def login():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -743,7 +743,7 @@ def register():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -856,14 +856,14 @@ def new_channel():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         },
         {
             "name": "Authorization",
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "security": [{"Bearer": []}],
@@ -950,7 +950,7 @@ def find_all_channels():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1070,7 +1070,7 @@ def get_channel(channel_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1151,7 +1151,7 @@ def patch_channel(channel_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1287,7 +1287,7 @@ def delete_channel(channel_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1481,7 +1481,7 @@ def new_resource():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1671,7 +1671,7 @@ def get_resource(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1895,7 +1895,7 @@ def patch_resorce(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -1967,7 +1967,7 @@ def delete_resource(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2095,7 +2095,7 @@ def all_resources():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2210,7 +2210,7 @@ def add_channel_to_resource():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2321,7 +2321,7 @@ def remove_channel_from_resource():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2413,7 +2413,7 @@ def get_channels_by_resource(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2519,7 +2519,7 @@ def get_event(event_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2602,7 +2602,7 @@ def update_event(event_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2675,7 +2675,7 @@ def get_event_snapshot(snapshot_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2747,7 +2747,7 @@ def get_event_text(snapshot_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2819,7 +2819,7 @@ def get_event_html(snapshot_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -2903,7 +2903,7 @@ def get_event_last_snapshot_id(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -3008,7 +3008,7 @@ def get_snapshot_times(resource_id: str):
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -3112,7 +3112,7 @@ def get_screenshot():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -3228,7 +3228,7 @@ def get_filtred_events():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -3388,7 +3388,7 @@ def generate_repot():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "responses": {
@@ -3544,7 +3544,7 @@ def get_events_list():
             "in": "header",
             "required": True,
             "type": "string",
-            "description": "JWT токен в формате 'Bearer {token}'"
+            "description": "JWT токен в формате 'bearer: {token}'"
         }
     ],
     "produces": ["application/json"],
