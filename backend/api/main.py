@@ -92,11 +92,17 @@ from functools import wraps
 import urllib.parse
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
+from flask_login import LoginManager
 from werkzeug.security import (
     check_password_hash,
     generate_password_hash
 )
 from flask_admin.form.widgets import Select2Widget
+from flask_login import (
+    login_user,
+    logout_user,
+    current_user
+)
 from api.model.admin_models import (
     db,
     User,
@@ -152,6 +158,53 @@ def before_request():
     request.request_id = str(uuid.uuid4())
 
 
+@app.before_request
+def load_user_from_jwt():
+    if request.path.startswith('/static') or request.path == '/login' or request.path == '/users/login':
+        return
+    
+    bearer = request.headers.get("Authorization")
+    if bearer and len(bearer.split()) == 2:
+        token = bearer.split()[1]
+        if check_jwt(cfg.redis, token):
+            try:
+                payload = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")
+                email = payload.get("user")
+                
+                if email:
+                    user = get_user_by_email(cfg.postgres, email)
+                    if user and user.is_admin:
+                        login_user(User.query.get(user.id))
+                    elif request.path.startswith('/admin'):
+                        return jsonify({"error": "Admin access required"}), 403
+            except Exception as e:
+                if request.path.startswith('/admin'):
+                    return jsonify({"error": "Invalid token"}), 401
+
+
+@app.before_request
+def check_admin_access():
+    if request.path.startswith('/admin') and not request.path.startswith('/admin/login'):
+        token = None
+        bearer = request.headers.get('Authorization')
+        if bearer and len(bearer.split()) == 2:
+            token = bearer.split()[1]
+        
+        if not token:
+            token = request.cookies.get('admin_token')
+        
+        if not token or not check_jwt(cfg.redis, token):
+            return redirect(url_for('admin_login'))
+        
+        try:
+            email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
+            user = get_user_by_email(cfg.postgres, email)
+            if not user or not user.is_admin:
+                return jsonify({"error": "Admin access required"}), 403
+        except Exception:
+            return redirect(url_for('admin_login'))
+
+
 @app.after_request
 def after_request(response):
     email = "unauthorized"
@@ -197,32 +250,22 @@ db.init_app(app)
 
 # admin panel
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
 class AdminModelView(ModelView):
     def is_accessible(self):
-        # If you test this functionality with no frontend/detached fronend, then
-        # for your convenience you should mock bearer token when you move by links of admin panel.
-        # like this:
-        # bearer = "bearer: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiYWRtaW5AYWRtaW4uY29tIiwiZXhwIjoxNzQ2NTYxMTM3fQ.0L1CoLky3IoDA1Surqr5RpZnblcVYBqhRuKIH6RGkok"
-        bearer = request.headers.get("Authorization")
-        if bearer is not None:
-            data = bearer.split()
-            if len(data) == 2:
-                token = bearer.split()[1]
-                if token:
-                    try:
-                        email = jwt.decode(token, cfg.server.secret_key, algorithms="HS256")["user"]
-                        user = get_user_by_email(cfg.postgres, email)
-                        if user is None:
-                            return False
-                        if user.deleted_at is not None:
-                            return False
-                        return user.is_admin
-                    except Exception as error:
-                        return True
-        return False
+        if not current_user.is_authenticated:
+            return False
+        user = get_user_by_id(cfg.postgres, current_user.id)
+        return user.is_admin
 
     def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for('login', next=request.url))
+        return redirect('/admin/login')
 
 
 class UserModelView(AdminModelView):
@@ -449,9 +492,8 @@ def login():
         cfg.server.secret_key,
     )
     save_jwt(cfg.redis, str(token), True, cfg.server.session_duration)
-    return (
-        jsonify(
-            {
+    return jsonify(
+        {
                 "accessToken": token,
                 "user": {
                     "id": user.id,
@@ -461,9 +503,64 @@ def login():
                     "is_admin": user.is_admin,
                 },
             }
-        ),
-        200,
-    )
+    ), 200
+
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not email or not password:
+            flash('Please provide both email and password', 'error')
+            return redirect(url_for('admin_login'))
+            
+        user = get_user_by_email(cfg.postgres, email)
+        password_hash = get_md5(password)
+        
+        if user is None or user.password != password_hash or not user.is_admin:
+            flash('Invalid credentials or insufficient permissions', 'error')
+            return redirect(url_for('admin_login'))
+            
+        # Создаем JWT токен
+        token = jwt.encode(
+            {
+                "user": email,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=1440),
+            },
+            cfg.server.secret_key,
+        )
+        save_jwt(cfg.redis, str(token), True, cfg.server.session_duration)
+        
+        # Устанавливаем куки с токеном (альтернатива - использовать localStorage в JS)
+        response = redirect(url_for('admin.index'))
+        response.set_cookie('admin_token', token, httponly=True, secure=True)
+        
+        # Также авторизуем пользователя через Flask-Login
+        login_user(User.query.get(user.id))
+        
+        return response
+        
+    return '''
+    <form method="POST">
+        <div>
+            <label>Email:</label>
+            <input type="email" name="email" required>
+        </div>
+        <div>
+            <label>Password:</label>
+            <input type="password" name="password" required>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    '''
+
+
+@app.route("/admin/logout", methods=["GET"])
+def logout_admin():
+    logout_user()
+    return redirect('/admin')
 
 
 @app.route("/users/info", methods=["GET"])
@@ -615,6 +712,7 @@ def logout():
     if not check_jwt(cfg.redis, token):
         return jsonify({"error": "token is invalid/expired"}), 401
     delete_jwt(cfg.redis, token)
+    logout_user()
     return jsonify({}), 200
 
 
