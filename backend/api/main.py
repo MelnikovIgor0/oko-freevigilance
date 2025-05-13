@@ -1862,10 +1862,8 @@ def patch_resorce(resource_id: str):
                 return jsonify({"error": f"channel {channel_id} not found"}), 404
     
     sensitivity = body.get("sensitivity")
-    if polygon is None and sensitivity is not None:
-        return jsonify({"error": "sensitivity and polygon are mutually exclusive"}), 400
     if sensitivity is not None:
-        if not isinstance(sensitivity, float) or (sensitivity < 0 or sensitivity > 100):
+        if (not isinstance(sensitivity, float) and not isinstance(sensitivity, int)) or (sensitivity < 0 or sensitivity > 100):
             return jsonify({"error": "sensitivity is invalid"}), 400
         polygon['sensitivity'] = sensitivity
 
