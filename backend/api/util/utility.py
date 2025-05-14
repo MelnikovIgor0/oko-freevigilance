@@ -3,7 +3,7 @@ from api.config.config import ServerConfig, S3Config
 from api.util.cron import create_cron_job, update_cron_job, kill_cron_job
 from api.model.s3_interactor import get_all_files
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import base64
@@ -42,12 +42,20 @@ def get_last_snapshot_id(cfg: S3Config, resource_id: str) -> int:
     return max_id
 
 
-def get_snapshot_times_by_resource_id(cfg: S3Config, resource_id: str) -> List[Tuple[datetime, int]]:
+def get_snapshot_times_by_resource_id(cfg: S3Config,
+                                      resource_id: str,
+                                      offset: Optional[int],
+                                      limit: Optional[int]) -> List[Tuple[datetime, int]]:
     images = get_all_files(cfg, 'images')
     dates = []
     for i in range(len(images)):
         if images[i]['Key'].startswith(resource_id):
-            dates.append((images[i]['LastModified'], i + 1))
+            dates.append((images[i]['LastModified'], i))
+    dates = sorted(dates, key=lambda x: x[1])
+    if offset is not None and offset > 0:
+        dates = dates[offset:]
+    if limit is not None:
+        dates = dates[:limit]
     return dates
 
 

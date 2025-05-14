@@ -139,10 +139,14 @@ def update_resource(
     conn.close()
 
 
-def get_all_resources(cfg: PostgreConfig) -> List[Resource]:
+def get_all_resources(cfg: PostgreConfig, offset: Optional[int], limit: Optional[int]) -> List[Resource]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, url, name, description, key_words, interval, make_screenshot, enabled, monitoring_polygon, starts_from FROM resources"
+    query = "SELECT id, url, name, description, key_words, interval, make_screenshot, enabled, monitoring_polygon, starts_from FROM resources ORDER BY name"
+    if offset is not None:
+        query += " OFFSET %s" % offset
+    if limit is not None:
+        query += " LIMIT %s" % limit
     cur.execute(query)
     result = cur.fetchall()
     cur.close()

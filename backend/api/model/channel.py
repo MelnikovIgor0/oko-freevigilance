@@ -107,10 +107,14 @@ def update_channel(
     conn.close()
 
 
-def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
+def get_all_channels(cfg: PostgreConfig, offset: Optional[int], limit: Optional[int]) -> List[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, name, type, enabled FROM channels"
+    query = "SELECT id, params, name, type, enabled FROM channels ORDER BY name"
+    if offset is not None:
+        query += " OFFSET %s" % offset
+    if limit is not None:
+        query += " LIMIT %s" % limit
     cur.execute(query)
     result = cur.fetchall()
     cur.close()

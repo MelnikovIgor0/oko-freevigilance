@@ -1008,7 +1008,9 @@ def new_channel():
     }
 })
 def find_all_channels():
-    channels = get_all_channels(cfg.postgres)
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit must be used together"}), 400
+    channels = get_all_channels(cfg.postgres, request.args.get("offset"), request.args.get("limit"))
     return (
         jsonify(
             {
@@ -2127,7 +2129,9 @@ def delete_resource(resource_id: str):
     }
 })
 def all_resources():
-    resources = get_all_resources(cfg.postgres)
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit must be used together"}), 400
+    resources = get_all_resources(cfg.postgres, request.args.get("offset"), request.args.get("limit"))
     result = []
     for resource in resources:
         all_channels = get_channel_resource_by_resource_id(cfg.postgres, resource.id)
@@ -3064,7 +3068,18 @@ def get_snapshot_times(resource_id: str):
     resource = get_resource_by_id(cfg.postgres, resource_id)
     if resource is None:
         return jsonify({"error": f"resource {resource_id} not found"}), 400
-    snapshots = get_snapshot_times_by_resource_id(cfg.s3, resource_id)
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit must be specified together"}), 400
+    if request.args.get("offset") is not None and not request.args.get("offset").isdigit():
+        return jsonify({"error": "offset and limit must be integers"}), 400
+    if request.args.get("limit") is not None and not request.args.get("limit").isdigit():
+        return jsonify({"error": "offset and limit must be integers"}), 400
+    snapshots = get_snapshot_times_by_resource_id(
+        cfg.s3,
+        resource_id,
+        int(request.args.get("offset")) if request.args.get("offset") is not None else None,
+        int(request.args.get("limit")) if request.args.get("limit") is not None else None
+    )
     return jsonify(
         {
             "snapshots": [
@@ -3281,8 +3296,16 @@ def get_filtred_events():
     event_type = body.get("event_type")
     if event_type is not None and event_type not in ["keyword", "image"]:
         return jsonify({"error", "type is invalid"}), 400
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit should be used together"}), 400
     events = filter_monitoring_events(
-        cfg.postgres, resource_ids, start_time, end_time, event_type
+        cfg.postgres,
+        resource_ids,
+        start_time,
+        end_time,
+        event_type,
+        request.args.get("offset"),
+        request.args.get("limit")
     )
     return jsonify({"events": events}), 200
 
@@ -3397,8 +3420,14 @@ def generate_repot():
                 is None
             ):
                 return jsonify({"error": f"snapshot {snapshot_id} not found"}), 404
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit should be used together"}), 400
     filtred_events = filter_monitoring_events_for_report(
-        cfg.postgres, snapshot_ids, event_ids
+        cfg.postgres,
+        snapshot_ids,
+        event_ids,
+        request.args.get("offset"),
+        request.args.get("limit")
     )
     event_types_by_snapshot = dict()
     if snapshot_ids is not None:
@@ -3587,8 +3616,10 @@ def get_events_list():
                 is None
             ):
                 return jsonify({"error": f"snapshot {snapshot_id} not found"}), 404
+    if (body.get("offset") is not None) != (body.get("limit") is not None):
+        return jsonify({"error": "offset and limit should be used together"}), 400
     filtred_events = filter_monitoring_events_for_report(
-        cfg.postgres, snapshot_ids, event_ids
+        cfg.postgres, snapshot_ids, event_ids, body.get("offset"), body.get("limit")
     )
     event_types_by_snapshot = dict()
     if snapshot_ids is not None:
@@ -3682,7 +3713,17 @@ def get_events_list():
     }
 })
 def get_all_events():
-    events = filter_monitoring_events(cfg.postgres, None, None, None, None)
+    if (request.args.get("offset") is not None) != (request.args.get("limit") is not None):
+        return jsonify({"error": "offset and limit should be used together"}), 400
+    events = filter_monitoring_events(
+        cfg.postgres,
+        None,
+        None,
+        None,
+        None,
+        request.args.get("offset"),
+        request.args.get("limit")
+    )
     return jsonify({"events": events}), 200
 
 

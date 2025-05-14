@@ -100,7 +100,9 @@ def filter_monitoring_events(cfg: PostgreConfig,
                              resource_ids: List[str],
                              start_time: Optional[datetime],
                              end_time: Optional[datetime],
-                             event_type: Optional[str]) -> List[MonitoringEvent]:
+                             event_type: Optional[str],
+                             offset: Optional[int],
+                             limit: Optional[int]) -> List[MonitoringEvent]:
     conn = get_connection(cfg)
     cur = conn.cursor()
     events_table = Table('monitoring_events')
@@ -118,6 +120,11 @@ def filter_monitoring_events(cfg: PostgreConfig,
         query = query.where(events_table.created_at <= end_time)
     if event_type is not None:
         query = query.where(events_table.name.like(f'%{event_type}%'))
+    query = query.orderby(events_table.created_at)
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
     cur.execute(query.get_sql())
     result = cur.fetchall()
     cur.close()
@@ -134,7 +141,9 @@ def filter_monitoring_events(cfg: PostgreConfig,
 
 def filter_monitoring_events_for_report(cfg: PostgreConfig,
                                         snapshot_ids: Optional[List[str]],
-                                        event_ids: Optional[List[str]]) -> List[MonitoringEvent]:
+                                        event_ids: Optional[List[str]],
+                                        offset: Optional[int],
+                                        limit: Optional[int]) -> List[MonitoringEvent]:
     if (snapshot_ids is None or len(snapshot_ids) == 0) and (event_ids is None or len(event_ids) == 0):
         return []
     conn = get_connection(cfg)
@@ -152,6 +161,11 @@ def filter_monitoring_events_for_report(cfg: PostgreConfig,
         query = query.where(events_table.id.isin(event_ids))
     elif snapshot_ids is not None and len(snapshot_ids) > 0:
         query = query.where(events_table.snapshot_id.isin(snapshot_ids))
+    query = query.orderby(events_table.created_at)
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
     cur.execute(query.get_sql())
     result = cur.fetchall()
     cur.close()
