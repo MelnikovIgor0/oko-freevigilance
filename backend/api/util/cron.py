@@ -8,7 +8,10 @@ def create_cron_job(command: str, schedule: str, id: str) -> bool:
         job.setall(schedule)
         cron.write()
         return True
-    except:
+    except Exception as e:
+        with open("error.txt", "w") as f:
+            f.write("exception!!!")
+            f.write(str(e))
         return False
 
 

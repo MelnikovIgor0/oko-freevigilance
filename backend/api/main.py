@@ -1530,7 +1530,8 @@ def new_resource():
     for channel_id in channels:
         create_channel_resource(cfg.postgres, channel_id, resource.id)
 
-    create_daemon_cron_job_for_resource(resource, cfg.server)
+    if not create_daemon_cron_job_for_resource(resource, cfg.server):
+        return jsonify({"error": "failed to create daemon cron job"}), 500
 
     # Convert starts_from to Unix timestamp for response
     starts_from_timestamp = (
