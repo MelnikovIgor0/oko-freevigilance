@@ -110,7 +110,7 @@ def update_channel(
 def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
     conn = get_connection(cfg)
     cur = conn.cursor()
-    query = "SELECT id, params, name, type FROM channels"
+    query = "SELECT id, params, name, type, enabled FROM channels"
     cur.execute(query)
     result = cur.fetchall()
     cur.close()
@@ -118,6 +118,6 @@ def get_all_channels(cfg: PostgreConfig) -> List[Channel]:
     if result is None:
         return []
     return [
-        Channel(id=row[0], params=row[1], enabled=True, name=row[2], type=row[3])
+        Channel(id=row[0], params=row[1], name=row[2], type=row[3], enabled=row[4])
         for row in result
     ]
