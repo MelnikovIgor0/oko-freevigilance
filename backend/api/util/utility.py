@@ -50,7 +50,7 @@ def get_snapshot_times_by_resource_id(cfg: S3Config,
     dates = []
     for i in range(len(images)):
         if images[i]['Key'].startswith(resource_id):
-            dates.append((images[i]['LastModified'], int(images[i]['Key'].split('_')[1])))
+            dates.append((images[i]['LastModified'], int(images[i]['Key'].split('_')[1].split('.')[0])))
     dates = sorted(dates, key=lambda x: x[0])
     if offset is not None and offset > 0:
         dates = dates[offset:]
