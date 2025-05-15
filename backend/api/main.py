@@ -926,6 +926,10 @@ def new_channel():
     params = body.get("params")
     if not params:
         return jsonify({"error": "params are missing"}), 400
+    try:
+        params = json.loads(params)
+    except:
+        return jsonify({"error": "params are invalid"}), 400
     channel = create_channel(cfg.postgres, params, type, name)
     return (
         jsonify(
