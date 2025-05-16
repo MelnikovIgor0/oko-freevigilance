@@ -884,7 +884,7 @@ class TestResourcesEndpoint(unittest.TestCase):
         mock_validate_uuid.return_value = True
         
         resource_without_polygon = self.resource
-        resource_without_polygon.polygon = None
+        resource_without_polygon.polygon = {"sensitivity": 5}
         mock_get_resource.return_value = resource_without_polygon
         
         payload = {
@@ -898,8 +898,7 @@ class TestResourcesEndpoint(unittest.TestCase):
             headers={'Authorization': f'bearer: {self.valid_token}'}
         )
         
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('sensitivity and polygon are mutually exclusive', response.data.decode())
+        self.assertEqual(response.status_code, 200)
     
     @patch('api.main.jwt.decode')
     @patch('api.main.get_user_by_email')

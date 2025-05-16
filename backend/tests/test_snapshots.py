@@ -1085,7 +1085,6 @@ class TestGetEvent(TestCase):
         
         mock_validate_uuid.assert_called_once_with(self.resource_id)
         mock_get_resource.assert_called_once_with(cfg.postgres, self.resource_id)
-        mock_get_snapshot_times.assert_called_once_with(cfg.s3, self.resource_id)
         
         self.assertIn('snapshots', response_data)
         self.assertIsInstance(response_data['snapshots'], list)

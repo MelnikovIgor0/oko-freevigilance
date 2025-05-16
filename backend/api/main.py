@@ -831,7 +831,7 @@ def register():
                     },
                     "params": {
                         "type": "object",
-                        "description": "Параметры канала уведомлений"
+                        "description": "Параметры канала уведомлений. Можно передать как json, так и строку представляющую json"
                     }
                 }
             }
@@ -926,10 +926,12 @@ def new_channel():
     params = body.get("params")
     if not params:
         return jsonify({"error": "params are missing"}), 400
-    try:
-        params = json.loads(params)
-    except:
-        return jsonify({"error": "params are invalid"}), 400
+    if params:
+        try:
+            params = json.loads(params)
+        except:
+            if not isinstance(params, dict):
+                return jsonify({"error": "params are invalid"}), 400
     channel = create_channel(cfg.postgres, params, type, name)
     return (
         jsonify(
@@ -984,7 +986,7 @@ def new_channel():
                                 "type": {"type": "string", "description": "Тип канала оповещения (email, telegram и т.д.)"},
                                 "name": {"type": "string", "description": "Название канала"},
                                 "enabled": {"type": "boolean", "description": "Статус активности канала"},
-                                "params": {"type": "object", "description": "Параметры канала в формате JSON"}
+                                "params": {"type": "object", "description": "Параметры канала в формате строки задающей JSON"}
                             }
                         }
                     }
@@ -1024,7 +1026,7 @@ def find_all_channels():
                         "type": channel.type,
                         "name": channel.name,
                         "enabled": channel.enabled,
-                        "params": channel.params,
+                        "params": json.dumps(channel.params),
                     }
                     for channel in channels
                 ]
@@ -1070,7 +1072,7 @@ def find_all_channels():
                             "enabled": {"type": "boolean", "description": "Статус активности канала"},
                             "type": {"type": "string", "description": "Тип канала оповещения (email, sms, telegram и т.д.)"},
                             "name": {"type": "string", "description": "Название канала"},
-                            "params": {"type": "object", "description": "Параметры канала в формате JSON"}
+                            "params": {"type": "object", "description": "Параметры канала в формате строки, задающей JSON"}
                         }
                     }
                 }
@@ -1128,7 +1130,7 @@ def get_channel(channel_id: str):
                     "enabled": channel.enabled,
                     "type": channel.type,
                     "name": channel.name,
-                    "params": channel.params,
+                    "params": json.dumps(channel.params),
                 }
             }
         ),
@@ -1160,7 +1162,7 @@ def get_channel(channel_id: str):
                 "properties": {
                     "params": {
                         "type": "object",
-                        "description": "Новые параметры канала в формате JSON"
+                        "description": "Новые параметры канала в формате JSON или строки, задающей JSON"
                     },
                     "enabled": {
                         "type": "boolean",
@@ -1230,6 +1232,12 @@ def patch_channel(channel_id: str):
         return jsonify({"error": f"channel {channel_id} not found"}), 404
     body = request.get_json()
     params = body.get("params")
+    if params:
+        try:
+            params = json.loads(params)
+        except:
+            if not isinstance(params, dict):
+                return jsonify({"error": "params are invalid"}), 400
     enabled = body.get("enabled")
     update_channel(cfg.postgres, channel_id, params, enabled)
     return jsonify({}), 200
